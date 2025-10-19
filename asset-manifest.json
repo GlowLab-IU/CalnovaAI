@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/CalnovaAI/static/css/main.e6c13ad2.css",
+    "main.js": "/CalnovaAI/static/js/main.10899685.js",
+    "static/js/422.eaf0b81b.chunk.js": "/CalnovaAI/static/js/422.eaf0b81b.chunk.js",
+    "static/media/calnovaAI.png": "/CalnovaAI/static/media/calnovaAI.c26e8c2f6261252772a7.png",
+    "static/media/section2_AIApp.png": "/CalnovaAI/static/media/section2_AIApp.0fe632f8f41fe799abe5.png",
+    "static/media/section4_HomePage.png": "/CalnovaAI/static/media/section4_HomePage.60e850b1aae4dca9a633.png",
+    "static/media/section3_HomePage.png": "/CalnovaAI/static/media/section3_HomePage.799916b4ab18a49c0d99.png",
+    "static/media/section1_HomePage.png": "/CalnovaAI/static/media/section1_HomePage.597ccfd574d27a234aef.png",
+    "static/media/svg-1.svg": "/CalnovaAI/static/media/svg-1.c9c88a21e91731441defcbe4fd28df2c.svg",
+    "static/media/svg-2.svg": "/CalnovaAI/static/media/svg-2.882a2cd55b0d7b00d26fa8b75df947a2.svg",
+    "static/media/svg-3.svg": "/CalnovaAI/static/media/svg-3.335c6aa86c2cf6a13e044975c1beee48.svg",
+    "index.html": "/CalnovaAI/index.html",
+    "main.e6c13ad2.css.map": "/CalnovaAI/static/css/main.e6c13ad2.css.map",
+    "main.10899685.js.map": "/CalnovaAI/static/js/main.10899685.js.map",
+    "422.eaf0b81b.chunk.js.map": "/CalnovaAI/static/js/422.eaf0b81b.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.10899685.js"
+  ]
+}
