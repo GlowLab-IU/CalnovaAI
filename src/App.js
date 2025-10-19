@@ -13,7 +13,7 @@ import ScrollToTop from './components/ScrollToTop';
 function App() {
   return (
     
-      <Router>
+      <Router basename="/CalnovaAI">
           <GlobalStyles />
           <ScrollToTop />
           <Navbar />
