@@ -45,10 +45,10 @@ export const homeObjOne = {
       '📱 Bước 1: Tải ứng dụng Expo Go\n• Android: Tải từ Google Play Store\n• iOS: Tải từ App Store\n\n📷 Bước 2: Quét mã QR\n• Mở ứng dụng Expo Go\n• Nhấn "Scan QR Code"\n• Quét mã QR bên dưới\n\n🚀 Bước 3: Bắt đầu sử dụng\n• Ứng dụng sẽ tự động tải về\n• Chờ vài giây để khởi chạy\n• Bắt đầu phân tích tiếng khóc của bé!',
     buttonLabel: 'Tải Expo Go',
     imgStart: '',
-    img: require('../../images/svg-3.svg'),
+    img: require('../../images/qr-expo.png'),
     alt: 'Tutorial',
     // Thông tin cho links và QR code
-    expoQR: 'https://via.placeholder.com/300x300.png?text=QR+Code+Baby+Cry',
+    expoQR: require('../../images/qr-expo.png'),
     androidLink: 'https://play.google.com/store/apps/details?id=host.exp.exponent',
     iosLink: 'https://apps.apple.com/app/expo-go/id982107779'
   };
