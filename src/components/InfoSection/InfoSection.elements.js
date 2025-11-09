@@ -184,17 +184,12 @@ export const StoreButton = styled.a`
 export const VideoWrapper = styled.div`
   position: relative;
   width: 100%;
-  max-width: 560px;
+  max-width: 100%;
+  height: 600px;
   margin: 20px auto;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-
-  &::before {
-    content: '';
-    display: block;
-    padding-top: 56.25%; /* 16:9 Aspect Ratio */
-  }
 `;
 
 export const VideoIframe = styled.iframe`

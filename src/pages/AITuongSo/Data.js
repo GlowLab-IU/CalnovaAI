@@ -59,5 +59,6 @@ export const homeObjOne = {
     buttonLabel: 'Xem Đánh Giá',
     imgStart: 'start',
     img: require('../../images/svg-1.svg'),
-    alt: 'User Experience'
+    alt: 'User Experience',
+    demoVideo: 'https://crayfish-pretty-certainly.ngrok-free.app/'
   };
