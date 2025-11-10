@@ -185,11 +185,17 @@ export const VideoWrapper = styled.div`
   position: relative;
   width: 100%;
   max-width: 100%;
-  height: 600px;
+  height: 100vh;
+  min-height: 800px;
   margin: 20px auto;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  
+  @media screen and (max-width: 768px) {
+    height: 80vh;
+    min-height: 600px;
+  }
 `;
 
 export const VideoIframe = styled.iframe`
@@ -199,4 +205,65 @@ export const VideoIframe = styled.iframe`
   width: 100%;
   height: 100%;
   border: none;
+`;
+
+export const PhoneEmulatorWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 750px;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  
+  @media screen and (max-width: 768px) {
+    height: 650px;
+    max-width: 100%;
+  }
+`;
+
+export const PhoneEmulatorIframe = styled.iframe`
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+`;
+
+export const AppLinkButton = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  background: ${({ primary }) => primary || '#FDB913'};
+  color: white;
+  text-decoration: none;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+    filter: brightness(1.1);
+  }
+
+  svg {
+    margin-right: 10px;
+    font-size: 20px;
+  }
+  
+  @media screen and (max-width: 768px) {
+    padding: 12px 24px;
+    font-size: 14px;
+    
+    svg {
+      font-size: 18px;
+    }
+  }
 `;

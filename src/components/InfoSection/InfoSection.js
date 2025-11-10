@@ -15,11 +15,14 @@ import {
     AppStoreButtons,
     StoreButton,
     VideoWrapper,
-    VideoIframe
+    VideoIframe,
+    PhoneEmulatorWrapper,
+    PhoneEmulatorIframe,
+    AppLinkButton
 } from './InfoSection.elements'
 import { Container, Button } from '../../globalStyles'
 import { Link } from 'react-router-dom'
-import { FaGooglePlay, FaAppStoreIos } from 'react-icons/fa'
+import { FaGooglePlay, FaAppStoreIos, FaMobileAlt } from 'react-icons/fa'
 
  const InfoSection = ({ 
     
@@ -42,7 +45,9 @@ import { FaGooglePlay, FaAppStoreIos } from 'react-icons/fa'
     expoQR,
     androidLink,
     iosLink,
-    demoVideo
+    demoVideo,
+    phoneEmulator,
+    appLink
 }) => {
     return (
         <>
@@ -83,12 +88,20 @@ import { FaGooglePlay, FaAppStoreIos } from 'react-icons/fa'
                                 </AppStoreButtons>
                             )}
                             
-                            {buttonLabel && !expoQR && !demoVideo && (
-                            <Link to={buttonLink || '/sign-up'}>
-                            <Button big fontBig primary={primary} buttonColor={buttonColor}>
-                                {buttonLabel}
-                            </Button>
-                            </Link>
+                            {buttonLabel && !expoQR && !demoVideo && !phoneEmulator && (
+                                buttonLink && (buttonLink.startsWith('http://') || buttonLink.startsWith('https://')) ? (
+                                    <a href={buttonLink} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                                        <Button big fontBig primary={primary} buttonColor={buttonColor}>
+                                            {buttonLabel}
+                                        </Button>
+                                    </a>
+                                ) : (
+                                    <Link to={buttonLink || '/sign-up'}>
+                                        <Button big fontBig primary={primary} buttonColor={buttonColor}>
+                                            {buttonLabel}
+                                        </Button>
+                                    </Link>
+                                )
                             )}
                             </TextWrapper>
                         </InfoColumn>
@@ -100,6 +113,27 @@ import { FaGooglePlay, FaAppStoreIos } from 'react-icons/fa'
                                     <QRCodeImage src={expoQR} alt="QR Code" />
                                     <QRCodeLabel lightText={lightText}>Dùng ứng dụng Expo Go để quét</QRCodeLabel>
                                 </QRCodeWrapper>
+                            ) : phoneEmulator ? (
+                                /* Hiển thị phone emulator nếu có */
+                                <PhoneEmulatorWrapper>
+                                    <PhoneEmulatorIframe
+                                        src={phoneEmulator}
+                                        title="Phone Emulator"
+                                        allow="camera; microphone"
+                                        allowFullScreen
+                                    />
+                                    {appLink && (
+                                        <AppLinkButton 
+                                            href={appLink} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            primary={primary}
+                                        >
+                                            <FaMobileAlt />
+                                            <span>Mở Ứng Dụng Trực Tiếp</span>
+                                        </AppLinkButton>
+                                    )}
+                                </PhoneEmulatorWrapper>
                             ) : demoVideo ? (
                                 /* Hiển thị video demo nếu có */
                                 <VideoWrapper>
