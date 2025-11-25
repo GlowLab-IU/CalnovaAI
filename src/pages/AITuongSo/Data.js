@@ -57,9 +57,9 @@ export const homeObjOne = {
     headline: 'Xem demo ứng dụng hoạt động',
     description:
       'Khám phá giao diện và tính năng của AI Tướng Số ( Phiên bản Trải Nghiệm ). Xem cách ứng dụng nhận diện và phân tích khuôn mặt, chỉ tay một cách nhanh chóng và chính xác.\n\nỨng dụng được thiết kế với giao diện trực quan, dễ sử dụng và tối ưu hóa trải nghiệm người dùng.',
-    buttonLabel: '',
+    buttonLabel: 'Trải Nghiệm Ngay',
+    buttonLink: 'http://160.250.180.132:5003/',
     imgStart: 'start',
     img: require('../../images/svg-1.svg'),
-    alt: 'User Experience',
-    demoVideo: 'http://160.250.180.132:5003/'
+    alt: 'User Experience'
   };
