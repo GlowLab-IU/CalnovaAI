@@ -61,5 +61,5 @@ export const homeObjOne = {
     imgStart: 'start',
     img: require('../../images/svg-1.svg'),
     alt: 'User Experience',
-    demoVideo: 'https://crayfish-pretty-certainly.ngrok-free.app/'
+    demoVideo: 'http://160.250.180.132:5003/'
   };
