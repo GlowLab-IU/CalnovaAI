@@ -1,6 +1,6 @@
 import React from 'react'
 import { InfoSection } from '../../components';
-import { homeObjOne, homeObjTwo, homeObjThree, homeObjFour } from './Data'
+import { homeObjOne, homeObjTwo, homeObjThree } from './Data'
 
 function AIBabyCry() {
     return (
@@ -8,7 +8,6 @@ function AIBabyCry() {
             <InfoSection {...homeObjOne}/>
             <InfoSection {...homeObjTwo}/>
             <InfoSection {...homeObjThree}/>
-            <InfoSection {...homeObjFour}/>
         </>
     )
 }

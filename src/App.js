@@ -22,7 +22,7 @@ function App() {
             <Route path='/products' component={Products} />
             <Route path='/ai-tuong-so' component={AITuongSo} />
             <Route path='/ai-baby-cry' component={AIBabyCry} />
-            <Route path='/ai-acne' component={AIAcne} />
+            {/* <Route path='/ai-acne' component={AIAcne} /> */}
             <Route path='/sign-up' component={SignUp} />
           </Switch>
           <Footer />

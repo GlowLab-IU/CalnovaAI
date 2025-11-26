@@ -100,9 +100,9 @@ function Navbar() {
                                 <DropdownLink to='/ai-baby-cry' onClick={closeMobileMenu}>
                                     AI Baby Cry
                                 </DropdownLink>
-                                <DropdownLink to='/ai-acne' onClick={closeMobileMenu}>
+                                {/* <DropdownLink to='/ai-acne' onClick={closeMobileMenu}>
                                     AI Nhận Diện Mụn
-                                </DropdownLink>
+                                </DropdownLink> */}
                             </DropdownMenu>
                         </NavItem>
 

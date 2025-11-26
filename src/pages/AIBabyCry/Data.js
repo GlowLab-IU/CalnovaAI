@@ -11,7 +11,7 @@ export const homeObjOne = {
       'AI Baby Cry sử dụng công nghệ phân tích âm thanh và machine learning để nhận diện cảm xúc và nhu cầu của bé qua tiếng khóc. Giúp cha mẹ phản ứng nhanh và chính xác với nhu cầu của con.',
     buttonLabel: 'Xem Hướng Dẫn',
     imgStart: '',
-    img: require('../../images/svg-1.svg'),
+    img: require('../../images/prj/babycry/header/image.png'),
     alt: 'AI Baby Cry'
   };
   
@@ -28,7 +28,7 @@ export const homeObjOne = {
       '✓ Nhận diện: Đói, Mệt mỏi muốn ngủ, Đau đớn, Cần thay tã, Cần ôm ấp, Quá nóng/lạnh, Nôn trớ/đầy hơi\n\n✓ Độ chính xác lên đến 92%\n\n✓ AI học tập và cá nhân hóa theo từng bé\n\n✓ Ghi chép nhật ký khóc tự động\n\n✓ Phân tích xu hướng và cảnh báo bất thường\n\n✓ Gợi ý chăm sóc phù hợp',
     buttonLabel: 'Tìm Hiểu Thêm',
     imgStart: 'start',
-    img: require('../../images/svg-2.svg'),
+    img: require('../../images/prj/babycry/section/image.png'),
     alt: 'Baby Cry Features'
   };
   
@@ -53,21 +53,3 @@ export const homeObjOne = {
     iosLink: 'https://apps.apple.com/app/expo-go/id982107779'
   };
   
-  // Section 4: Demo
-  export const homeObjFour = {
-    primary: '#4A90E2',
-    lightBg: true,
-    lightText: false,
-    lightTopLine: false,
-    lightTextDesc: false,
-    topLine: 'Demo & Kết Quả',
-    headline: 'Xem ứng dụng hoạt động thực tế',
-    description:
-      '🎥 Video demo chức năng chính:\n\n✓ Thu âm tiếng khóc của bé\n\n✓ AI phân tích và nhận diện nguyên nhân\n\n✓ Hiển thị kết quả với độ tin cậy\n\n✓ Gợi ý cách xử lý phù hợp\n\n✓ Lưu lịch sử và phân tích xu hướng\n\n👨‍👩‍👧‍👦 Được hơn 50,000 gia đình tin tưởng sử dụng',
-    buttonLabel: 'Xem Demo Video',
-    imgStart: 'start',
-    img: require('../../images/svg-1.svg'),
-    alt: 'Demo Results',
-    // Link demo video (có thể thay thế bằng link thực)
-    demoVideo: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
-  };
