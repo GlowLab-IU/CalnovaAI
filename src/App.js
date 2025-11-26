@@ -7,9 +7,20 @@ import Products from './pages/Products/Products';
 import SignUp from './pages/SignUp/SignUp';
 import AITuongSo from './pages/AITuongSo/AITuongSo';
 import AIBabyCry from './pages/AIBabyCry/AIBabyCry';
-import AIAcne from './pages/AIAcne/AIAcne';
+// import AIAcne from './pages/AIAcne/AIAcne';
 import ScrollToTop from './components/ScrollToTop';
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/**
+ * The App component is the top-level component for the application.
+ * It contains a Router with routes to each of the pages in the application.
+ * The Router also contains a GlobalStyles component which applies global CSS styles to the application.
+ * The ScrollToTop component is used to scroll to the top of the page when a route changes.
+ * The Navbar component is used to render the navigation bar for the application.
+ * The Switch component is used to render the correct page based on the current route.
+ * The Footer component is used to render the footer for the application.
+ */
+/*******  81ec9518-0a71-442b-8b13-ddc11a2d3dfa  *******/
 function App() {
   return (
     
