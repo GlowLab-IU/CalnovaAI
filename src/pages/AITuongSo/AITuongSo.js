@@ -1,6 +1,6 @@
 import React from 'react'
 import { InfoSection } from '../../components';
-import { homeObjOne, homeObjTwo, homeObjThree } from './Data'
+import { homeObjOne, homeObjTwo, homeObjThree, homeObjFour } from './Data'
 
 function AITuongSo() {
     return (
@@ -8,6 +8,7 @@ function AITuongSo() {
             <InfoSection {...homeObjOne}/>
             <InfoSection {...homeObjTwo}/>
             <InfoSection {...homeObjThree}/>
+            <InfoSection {...homeObjFour}/>
         </>
     )
 }

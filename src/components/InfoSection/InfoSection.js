@@ -47,7 +47,10 @@ import { FaGooglePlay, FaAppStoreIos, FaMobileAlt } from 'react-icons/fa'
     iosLink,
     demoVideo,
     phoneEmulator,
-    appLink
+    appLink,
+    apkQR,
+    qrLabel,
+    qrInstructions
 }) => {
     return (
         <>
@@ -112,6 +115,16 @@ import { FaGooglePlay, FaAppStoreIos, FaMobileAlt } from 'react-icons/fa'
                                     <QRCodeLabel lightText={lightText}>Quét mã QR để mở ứng dụng</QRCodeLabel>
                                     <QRCodeImage src={expoQR} alt="QR Code" />
                                     <QRCodeLabel lightText={lightText}>Dùng ứng dụng Expo Go để quét</QRCodeLabel>
+                                </QRCodeWrapper>
+                            ) : apkQR ? (
+                                <QRCodeWrapper>
+                                    <QRCodeLabel lightText={lightText}>{qrLabel || "Quét mã QR để tải ứng dụng"}</QRCodeLabel>
+                                    <QRCodeImage src={apkQR} alt="APK QR Code" />
+                                    {qrInstructions && (
+                                        <QRCodeLabel lightText={lightText} style={{ whiteSpace: 'pre-line', textAlign: 'center', fontWeight: 'normal' }}>
+                                            {qrInstructions}
+                                        </QRCodeLabel>
+                                    )}
                                 </QRCodeWrapper>
                             ) : phoneEmulator ? (
                                 /* Hiển thị phone emulator nếu có */

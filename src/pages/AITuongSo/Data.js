@@ -48,3 +48,20 @@ export const homeObjOne = {
   };
   
 
+export const homeObjFour = {
+  primary: '#FDB913',
+  lightBg: false,
+  lightText: true,
+  lightTopLine: true,
+  lightTextDesc: true,
+  topLine: 'Tải Ứng Dụng Mobile',
+  headline: 'Cài Đặt Ứng Dụng Android',
+  description: 'Trải nghiệm đầy đủ tính năng của AI Tướng Số ngay trên điện thoại của bạn. Tải xuống file APK và cài đặt dễ dàng.\n\n*Lưu ý: Đây là phiên bản dành cho điện thoại Android (APK). Phiên bản iOS sẽ sớm được ra mắt.*',
+  buttonLabel: '',
+  buttonLink: '', 
+  imgStart: 'start',
+  apkQR: require('../../images/qr-tuv.png'),
+  qrLabel: 'Quét mã để tải APK',
+  qrInstructions: '1. Dùng Camera hoặc Zalo để quét mã\n2. Nhấn vào liên kết tải về\n3. Mở file và chọn Cài đặt',
+  alt: 'Download APK QR Code'
+};
