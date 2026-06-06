@@ -136,7 +136,7 @@ function PrivacyPolicy() {
           </Section>
 
           <Section>
-            <SectionTitle>4. Quyền của Người dùng đối với Dữ liệu cá nhân</SectionTitle>
+            <SectionTitle>4. Quyền của Người dùng đối với Dữ liệu cá nhân (User Rights & Data Control)</SectionTitle>
             <Text>
               Bạn có toàn quyền kiểm soát thông tin cá nhân của mình. Cụ thể:
             </Text>
@@ -144,28 +144,49 @@ function PrivacyPolicy() {
               <BulletItem>
                 Bạn có thể cập nhật, chỉnh sửa thông tin hồ sơ (Họ tên, ngày sinh, giới tính) bất kỳ lúc nào ngay trong phần cài đặt của Ứng dụng.
               </BulletItem>
-              <BulletItem>
-                <strong>Quyền yêu cầu xóa dữ liệu:</strong> Bạn có quyền yêu cầu chúng tôi xóa vĩnh viễn tài khoản và mọi dữ liệu liên quan khỏi hệ thống của chúng tôi. Bạn có thể gửi yêu cầu xóa qua email hỗ trợ của chúng tôi tại: <em>calnovaai2025@gmail.com</em>. Chúng tôi sẽ xử lý yêu cầu của bạn trong vòng 7 ngày làm việc.
-              </BulletItem>
             </BulletList>
           </Section>
 
+          <Section id="delete-account">
+            <SectionTitle>5. Yêu Cầu Xóa Tài Khoản và Dữ Liệu (Account & Data Deletion Request)</SectionTitle>
+            <Text>
+              Người dùng ứng dụng <strong>Huyền Cơ</strong> có quyền yêu cầu xóa tài khoản và mọi dữ liệu liên quan bất kỳ lúc nào.
+            </Text>
+            <Text>
+              Để gửi yêu cầu xóa tài khoản, bạn có thể thực hiện theo một trong các cách sau:
+            </Text>
+            <BulletList>
+              <BulletItem>
+                Sử dụng nút <strong>"Xóa tài khoản" (Delete Account)</strong> trong phần Cài đặt (Settings) của ứng dụng.
+              </BulletItem>
+              <BulletItem>
+                Gửi email yêu cầu đến địa chỉ hỗ trợ của chúng tôi: <strong>jikeynguyentn@gmail.com</strong> với tiêu đề "Yêu Cầu Xóa Tài Khoản" (Account Deletion Request).
+              </BulletItem>
+            </BulletList>
+            <Text style={{ fontStyle: 'italic', color: '#a9b3c1', marginTop: '10px' }}>
+              English Version:
+            </Text>
+            <Text>
+              Users of the <strong>Huyền Cơ</strong> app can request to delete their account and associated data at any time. To request account deletion, you can either use the "Delete Account" button inside the app's settings, or send an email to <strong>jikeynguyentn@gmail.com</strong> with the subject "Account Deletion Request". All associated personal data (including profile info, face scanning history, and chat logs) will be completely and permanently wiped from our servers within 30 days.
+            </Text>
+          </Section>
+
           <Section>
-            <SectionTitle>5. Chia sẻ Thông tin với Bên thứ ba</SectionTitle>
+            <SectionTitle>6. Chia sẻ Thông tin với Bên thứ ba</SectionTitle>
             <Text>
               Chúng tôi cam kết <strong>KHÔNG</strong> bán, trao đổi hoặc cho thuê dữ liệu cá nhân hay hình ảnh của bạn cho bất kỳ bên thứ ba nào vì mục đích thương mại hoặc quảng cáo. Dữ liệu chỉ được truyền tải đến các nhà cung cấp dịch vụ máy chủ đám mây đáng tin cậy của chúng tôi nhằm mục đích xử lý tính toán AI cho ứng dụng.
             </Text>
           </Section>
 
           <Section>
-            <SectionTitle>6. Thay đổi đối với Chính sách Bảo mật này</SectionTitle>
+            <SectionTitle>7. Thay đổi đối với Chính sách Bảo mật này</SectionTitle>
             <Text>
               Chúng tôi có thể cập nhật Chính sách Bảo mật này theo thời gian để phù hợp với những thay đổi về dịch vụ hoặc yêu cầu pháp lý của Google Play Store. Khi có thay đổi, chúng tôi sẽ cập nhật ngày "Cập nhật lần cuối" ở đầu trang này. Chúng tôi khuyến khích bạn xem lại chính sách này định kỳ để luôn nắm rõ quyền lợi của mình.
             </Text>
           </Section>
 
           <Section>
-            <SectionTitle>7. Thông tin Liên hệ</SectionTitle>
+            <SectionTitle>8. Thông tin Liên hệ</SectionTitle>
             <Text>
               Nếu bạn có bất kỳ câu hỏi, thắc mắc hoặc yêu cầu nào liên quan đến Chính sách Bảo mật này hoặc cách xử lý dữ liệu của Huyền Cơ, vui lòng liên hệ với chúng tôi tại:
             </Text>
