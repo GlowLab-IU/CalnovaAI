@@ -4,15 +4,19 @@ import { FaMagento } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 
 export const Nav = styled.nav`
-    background: #101522;
+    background: rgba(10, 13, 20, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     height: 80px;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     position: sticky;
     top: 0;
     z-index: 999;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 `
 
 export const NavbarContainer = styled(Container)`
@@ -32,6 +36,11 @@ export const NavLogo = styled(Link)`
     display: flex;
     align-items: center;
     font-weight: bold;
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: scale(1.02);
+    }
 `
 
 export const NavLogoImg = styled.img`
@@ -78,22 +87,28 @@ export const NavMenu = styled.ul`
         top: 80px;
         opacity: 1;
         transition: all 0.5s ease;
-        background-color: #101522;
+        background-color: rgba(10, 13, 20, 0.95);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
         left: ${({ click }) => (click ? 0 : '-100%')};
     }
 `
 export const NavItem = styled.li`
     height: 80px;
-    border-bottom: 2px solid transparent;
+    border-bottom: 3px solid transparent;
     border-radius: 2px;
     position: relative;
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
 
     &:hover {
-        border-bottom: 4px solid #00A3E0;
+        border-bottom: 3px solid #00A3E0;
     }
 
     @media screen and (max-width: 960px) {
         width: 100%;
+        margin: 0;
 
         &:hover {
             border-bottom: none;

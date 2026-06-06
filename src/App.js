@@ -8,6 +8,7 @@ import SignUp from './pages/SignUp/SignUp';
 import AITuongSo from './pages/AITuongSo/AITuongSo';
 import AIBabyCry from './pages/AIBabyCry/AIBabyCry';
 // import AIAcne from './pages/AIAcne/AIAcne';
+import PrivacyPolicy from './pages/PrivacyPolicy/PrivacyPolicy';
 import ScrollToTop from './components/ScrollToTop';
 
 /*************  ✨ Windsurf Command ⭐  *************/
@@ -35,6 +36,7 @@ function App() {
             <Route path='/ai-baby-cry' component={AIBabyCry} />
             {/* <Route path='/ai-acne' component={AIAcne} /> */}
             <Route path='/sign-up' component={SignUp} />
+            <Route path='/privacy-policy' component={PrivacyPolicy} />
           </Switch>
           <Footer />
       </Router>

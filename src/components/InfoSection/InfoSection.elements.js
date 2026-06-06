@@ -1,29 +1,38 @@
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
+const floatAnim = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+`;
 
 export const InfoSec = styled.div`
     color: #fff;
-    padding: 160px 0;
+    padding: 140px 0;
+    position: relative;
+    overflow: hidden;
     background: ${({lightBg, primary, useButtonBg}) => {
-        // Nếu useButtonBg được set, dùng màu của button làm background
         if (useButtonBg) {
-            return primary ? '#00A3E0' : '#00A3E0';
+            return 'linear-gradient(180deg, #0A0D14 0%, #111625 100%)';
         }
         
-        if (primary) {
-            // Nếu có màu primary, trả về màu nhạt của nó cho lightBg hoặc màu tối cho dark
-            if (lightBg) {
-                // Tạo màu nền nhạt dựa trên primary color
-                if (primary === '#FDB913') return '#FFF9E6'; // Vàng nhạt
-                if (primary === '#4A90E2') return '#E3F2FD'; // Xanh dương nhạt
-                if (primary === '#FF69B4') return '#FFE4F0'; // Hồng nhạt
-                return '#fff';
-            } else {
-                return '#101522';
-            }
-        }
-        return lightBg ? '#fff' : '#101522';
+        return lightBg 
+            ? 'linear-gradient(180deg, #F8FAFC 0%, #EEF2F6 100%)' 
+            : 'linear-gradient(180deg, #0A0D14 0%, #111625 100%)';
     }};
+
+    &::before {
+        content: '';
+        position: absolute;
+        width: 400px;
+        height: 400px;
+        background: ${({primary}) => primary === '#FDB913' ? 'rgba(253, 185, 19, 0.03)' : 'rgba(0, 163, 224, 0.03)'};
+        border-radius: 50%;
+        filter: blur(120px);
+        top: 20%;
+        left: ${({ imgStart }) => (imgStart ? '60%' : '10%')};
+        pointer-events: none;
+    }
 `
 
 export const InfoRow = styled.div`
@@ -61,14 +70,14 @@ export const InfoColumn = styled.div`
 export const TextWrapper = styled.div`
   max-width: 540px;
   padding-top: 0;
-  padding-bottom: 60px;
+  padding-bottom: 20px;
 
   @media (min-width: 480px) and (max-width: 1200px) {
-    padding-bottom: 65px;
+    padding-bottom: 40px;
   }
 
   @media (min-width: 320px) and (max-width: 480px) {
-    padding-bottom: 65px;  
+    padding-bottom: 40px;  
   }
 `;
 
@@ -81,12 +90,13 @@ export const ImgWrapper = styled.div`
 export const TopLine = styled.div`
   color: ${({ lightTopLine, primary }) => {
     if (primary) return primary;
-    return lightTopLine ? '#a9b3c1' : '#00A3E0';
+    return lightTopLine ? '#94A3B8' : '#00A3E0';
   }};
-  font-size: 18px;
+  font-size: 14px;
   line-height: 16px;
-  font-weight: 700;
-  letter-spacing: 1.4px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   margin-bottom: 16px;
 `;
 
@@ -96,23 +106,30 @@ export const Img = styled.img`
   max-width: 100%;
   vertical-align: middle;
   display: inline-block;
-  max-height: 500px;
+  max-height: 480px;
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3));
+  animation: ${floatAnim} 6s ease-in-out infinite;
 `;
 
 export const Heading = styled.h1`
   margin-bottom: 24px;
-  font-size: 48px;
-  line-height: 1.1;
-  font-weight: 600;
-  color: ${({ lightText }) => (lightText ? '#f7f8fa' : '#1c2237')};
+  font-size: 42px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -1px;
+  color: ${({ lightText }) => (lightText ? '#F8FAFC' : '#0F172A')};
+  
+  @media screen and (max-width: 768px) {
+    font-size: 32px;
+  }
 `;
 
 export const Subtitle = styled.p`
-  max-width: 440px;
+  max-width: 460px;
   margin-bottom: 35px;
-  font-size: 18px;
-  line-height: 24px;
-  color: ${({ lightTextDesc }) => (lightTextDesc ? '#a9b3c1' : '#1c2237')};
+  font-size: 17px;
+  line-height: 1.6;
+  color: ${({ lightTextDesc }) => (lightTextDesc ? '#94A3B8' : '#475569')};
   white-space: pre-line;
 `;
 
@@ -121,27 +138,30 @@ export const QRCodeWrapper = styled.div`
   flex-direction: column;
   align-items: center;
   margin: 30px 0;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  backdrop-filter: blur(10px);
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 `;
 
 export const QRCodeImage = styled.img`
-  width: 250px;
-  height: 250px;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  margin-bottom: 15px;
+  width: 220px;
+  height: 220px;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
   background: white;
-  padding: 10px;
+  padding: 12px;
 `;
 
 export const QRCodeLabel = styled.p`
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: ${({ lightText }) => (lightText ? '#f7f8fa' : '#1c2237')};
-  margin: 10px 0 5px 0;
+  color: ${({ lightText }) => (lightText ? '#E2E8F0' : '#1E293B')};
+  margin: 5px 0;
 `;
 
 export const AppStoreButtons = styled.div`

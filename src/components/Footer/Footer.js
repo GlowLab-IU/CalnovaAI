@@ -44,7 +44,7 @@ function Footer() {
             <FooterLinkTitle>Hỗ Trợ</FooterLinkTitle>
             <FooterLink to='/sign-up'>Liên hệ</FooterLink>
             <FooterLink to='/sign-up'>Hỗ trợ kỹ thuật</FooterLink>
-            <FooterLink to='/services'>FAQ</FooterLink>
+            <FooterLink to='/privacy-policy'>Chính sách bảo mật</FooterLink>
             <FooterLink to='/services'>Điều khoản dịch vụ</FooterLink>
           </FooterLinkItems>
           <FooterLinkItems>
