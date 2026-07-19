@@ -1,4 +1,4 @@
-const CACHE_NAME = 'huyen-co-cache-v1';
+const CACHE_NAME = 'huyen-co-cache-v2';
 const urlsToCache = [
   '/huyen-co',
   '/manifest.json',
@@ -40,21 +40,32 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Network-First for navigation (HTML) to ensure users always get the latest version
+  if (event.request.mode === 'navigate' || event.request.headers.get('accept').includes('text/html')) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        return caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, response.clone());
+          return response;
+        });
+      }).catch(err => {
+        return caches.match(event.request).then(fallback => {
+          return fallback || caches.match('/huyen-co');
+        });
+      })
+    );
+    return;
+  }
+
+  // Cache-First for static assets (JS chunks, images, etc.)
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
         return fetch(event.request).catch(err => {
-          // If fetch fails (offline), return offline fallback for normal pages
-          return caches.match('/huyen-co').then(fallback => {
-            if (fallback) {
-              return fallback;
-            }
-            throw err; // Throw fetch error so the browser handles it rather than displaying ERR_FAILED
-          });
+          throw err;
         });
       })
   );
