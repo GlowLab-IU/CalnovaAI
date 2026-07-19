@@ -1,0 +1,36 @@
+<svg width="100" height="130" viewBox="0 0 100 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="handGradient" x1="50" y1="0" x2="50" y2="130" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.3" />
+            <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.05" />
+        </linearGradient>
+
+        <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+            <feColorMatrix in="blur" type="matrix" values="
+                0 0 0 0 0.133
+                0 0 0 0 0.827
+                0 0 0 0 0.933
+                0 0 0 1 0" result="glowingColor" /> <feMerge>
+                <feMergeNode in="glowingColor" />
+                <feMergeNode in="SourceGraphic" />
+            </feMerge>
+        </filter>
+
+        <radialGradient id="tipGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(50 10) rotate(90) scale(15)">
+             <stop stop-color="white"/>
+             <stop offset="0.5" stop-color="#22D3EE"/>
+             <stop offset="1" stop-color="#22D3EE" stop-opacity="0"/>
+        </radialGradient>
+    </defs>
+
+    <g filter="url(#neonGlow)">
+        <path d="M50 10C50 4.47715 54.4772 0 60 0C65.5228 0 70 4.47715 70 10V45C70 47.7614 72.2386 50 75 50H85C90.5228 50 95 54.4772 95 60V80C95 107.614 72.6142 130 45 130H35C15.67 130 0 114.33 0 95V80C0 75.896 1.33138 71.8698 3.8296 68.5527L18.4342 49.1653C20.8293 45.9867 22.5 42.1379 22.5 38.1623V35C22.5 29.4772 26.9772 25 32.5 25C38.0228 25 42.5 29.4772 42.5 35V45C42.5 47.7614 44.7386 50 47.5 50H50V10Z"
+              fill="url(#handGradient)"
+              stroke="#22D3EE"
+              stroke-width="3"
+              stroke-linejoin="round"
+        />
+        <circle cx="50" cy="5" r="8" fill="url(#tipGlow)" />
+    </g>
+</svg>

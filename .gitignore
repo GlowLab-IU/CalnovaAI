@@ -22,3 +22,13 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.md
+
+# Next.js
+/.next/
+/out/
+*.tsbuildinfo
+
+# Project specific
+/scratch/
+/old-cra-backup/
