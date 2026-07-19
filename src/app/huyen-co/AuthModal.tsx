@@ -523,7 +523,7 @@ function AuthModalContent({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
 export default function AuthModal(props: AuthModalProps) {
   if (!props.isOpen) return null;
   return (
-    <GoogleOAuthProvider clientId="474899214737-v83c6o8elkm1d9g9i49shpgun3jmp9h1.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId="259910143863-s6d7rcht6o1jmtq6vfcidlgbduf33ns6.apps.googleusercontent.com">
       <AuthModalContent {...props} />
     </GoogleOAuthProvider>
   );
