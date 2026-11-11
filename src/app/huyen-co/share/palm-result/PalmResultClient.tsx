@@ -2,6 +2,13 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import HuyenCoHeader from "../../components/HuyenCoHeader";
+import {
+  PalmReadingIcon,
+  AICoachOracleIcon,
+  SparkleIcon,
+  ShareSealIcon,
+} from "../../components/HuyenCoIcons";
 
 interface Interpretation {
   id: number;
@@ -47,20 +54,19 @@ interface PalmResultClientProps {
   token?: string | null;
 }
 
-export default function PalmResultClient({ 
-  analysis, 
+export default function PalmResultClient({
+  analysis,
   refCode = "",
   isScanningPage = false,
   saveStatus = "unsaved",
   onSave,
   onShare,
   onReset,
-  token = null
+  token = null,
 }: PalmResultClientProps) {
   const [activeMainTab, setActiveMainTab] = useState<"overview" | "lines" | "aspects">("overview");
   const [activeLineType, setActiveLineType] = useState<string>("");
 
-  // Setup initial active line type if interpretations exist
   React.useEffect(() => {
     if (analysis.interpretations && analysis.interpretations.length > 0) {
       setActiveLineType(analysis.interpretations[0].lineType);
@@ -68,344 +74,367 @@ export default function PalmResultClient({
   }, [analysis.interpretations]);
 
   const getLineName = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "life": return "Đường Sinh Đạo (Life Line)";
-      case "head": return "Đường Trí Đạo (Head Line)";
-      case "heart": return "Đường Tâm Đạo (Heart Line)";
-      case "fate": return "Đường Định Mệnh (Fate Line)";
-      case "sun": return "Đường Thái Dương (Sun Line)";
-      default: return "Đường Chỉ Tay";
+    switch ((type || "").toLowerCase()) {
+      case "life":
+        return "Đường Sinh Đạo (Sinh Lực & Căn Cơ)";
+      case "head":
+        return "Đường Trí Đạo (Tư Duy & Định Hướng)";
+      case "heart":
+        return "Đường Tâm Đạo (Tình Cảm & Nội Tâm)";
+      case "fate":
+        return "Đường Định Mệnh (Sự Nghiệp & Thiên Thời)";
+      case "sun":
+        return "Đường Thái Dương (Danh Vọng & Quý Nhân)";
+      default:
+        return "Đường Chỉ Tay";
     }
   };
 
   const getAspectName = (type: string) => {
-    switch (type.toLowerCase()) {
-      case "health": return "❤️ Sức Khỏe";
-      case "career": return "💼 Sự Nghiệp";
-      case "relationships": return "💞 Tình Duyên";
-      case "personality": return "👤 Tính Cách";
-      default: return "✨ Khía Cạnh";
+    switch ((type || "").toLowerCase()) {
+      case "health":
+        return "Sinh Lực & Sức Khỏe";
+      case "career":
+        return "Công Danh & Sự Nghiệp";
+      case "relationships":
+        return "Nhân Duyên & Tình Cảm";
+      case "personality":
+        return "Bản Tính & Nội Tâm";
+      default:
+        return "Phương Diện Đời Sống";
     }
   };
 
   const activeInterpretation = analysis.interpretations?.find(
-    (item) => item.lineType.toLowerCase() === activeLineType.toLowerCase()
+    (item) => (item.lineType || "").toLowerCase() === (activeLineType || "").toLowerCase()
+  );
+
+  const aiConsultPrompt = encodeURIComponent(
+    `Tôi vừa xem Thủ Tướng Học (Chỉ Tay) trên Huyền Cơ. Tóm tắt bàn tay: "${(
+      analysis.summaryText || ""
+    ).slice(
+      0,
+      240
+    )}". Xin Cố vấn phân tích sâu hơn sự liên kết giữa tướng tay này với vận trình Sự nghiệp, Tài lộc và Tình duyên của tôi.`
   );
 
   return (
-    <div 
-      className="min-h-screen font-sans selection:bg-[#8b5cf6]/30 pb-24 relative"
-      style={{
-        backgroundImage: "url('/images/palmbg.png')",
-        backgroundSize: "100% 100%",
-        backgroundRepeat: "no-repeat",
-        backgroundColor: "#fbf8f3",
-      }}
-    >
-      <div className="absolute inset-0 bg-[#fbf8f3]/10 pointer-events-none" />
+    <div className="min-h-screen bg-[#07060B] text-[#EFECE6] font-sans pb-24 relative overflow-x-hidden">
+      {/* Subtle Oriental Celestial Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[70vw] h-[50vw] bg-[#D4AF37]/[0.05] rounded-full blur-[140px]" />
+        <div className="absolute inset-0 opacity-[0.1] bg-[radial-gradient(#D4AF37_0.75px,transparent_0.75px)] [background-size:48px_48px]" />
+      </div>
 
-      {/* Header back to home for Scanning page */}
-      {isScanningPage && (
-        <header className="sticky top-0 z-50 w-full bg-[#fcf9f5]/90 backdrop-blur border-b border-[#D9C3B0] px-6 py-4 shadow-sm flex items-center justify-between max-w-5xl mx-auto rounded-b-2xl">
-          <Link href="/huyen-co" className="flex items-center gap-2 text-[#5C3E21] hover:text-amber-800 transition-all">
-            <span className="text-xl">←</span>
-            <span className="text-xs uppercase font-bold tracking-widest">Trang chủ</span>
-          </Link>
-          <h1 className="text-xs sm:text-sm font-bold tracking-widest text-amber-800 uppercase font-serif">
-            AI Biometric Palmistry • Xem Chỉ Tay
-          </h1>
-          <div className="w-12" />
-        </header>
-      )}
+      {/* Unified Header */}
+      <HuyenCoHeader subtitle="Bản Đồ Thủ Tướng Học & Sinh Trắc AI" />
 
-      {/* Floating Referral Badge */}
+      {/* Shared Referral Banner */}
       {!isScanningPage && (
-        <div className="sticky top-0 z-50 w-full bg-[#fcf9f5]/90 backdrop-blur border-b border-[#D9C3B0] px-4 py-3.5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3 max-w-5xl mx-auto rounded-b-2xl">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xl">🤝</span>
-            <p className="text-xs sm:text-sm text-[#5C3E21] font-semibold">
-              Bạn được chia sẻ kết quả sinh trắc bởi bạn bè. Đăng ký ngay để nhận <strong className="text-amber-800">+20 Tín Chỉ</strong> miễn phí!
-            </p>
+        <div className="max-w-5xl mx-auto px-4 pt-4 relative z-20">
+          <div className="hc-card rounded-2xl px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm text-[#EFECE6]">
+              <SparkleIcon size={16} className="text-[#D4AF37] shrink-0" />
+              <span>
+                Bạn được chia sẻ bản đồ thủ tướng từ bạn bè. Đăng ký ngay để nhận{" "}
+                <strong className="text-[#E8C96A]">+20 Tín Chỉ</strong> miễn phí!
+              </span>
+            </div>
+            <Link
+              href={`/huyen-co?ref=${refCode}`}
+              className="w-full sm:w-auto px-5 py-2 hc-gold-btn font-bold rounded-full text-xs text-center uppercase tracking-wider shrink-0"
+            >
+              Quét Chỉ Tay Ngay
+            </Link>
           </div>
-          <Link 
-            href={`/huyen-co?ref=${refCode}`}
-            className="w-full sm:w-auto px-6 py-2 bg-amber-800 text-white font-bold rounded-full text-xs text-center uppercase tracking-wider hover:bg-amber-900 transition-all shadow-lg"
-          >
-            Thử Quét Ngay
-          </Link>
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto px-4 pt-10 relative z-10">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-block text-4xl mb-3">🔮</div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#5C3E21] uppercase tracking-widest">
-            BẢN ĐỒ SINH HỌC LÒNG BÀN TAY
+      <div className="max-w-5xl mx-auto px-4 pt-8 relative z-10">
+        {/* Title */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#120F1D] border border-[#D4AF37]/30 mb-3">
+            <PalmReadingIcon size={42} />
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#D4AF37] mb-1">
+            Luận Giải Thủ Tướng Học Đông Phương
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-wide">
+            Sơ Đồ Tam Đạo & Chưởng Pháp
           </h1>
-          <p className="text-[#8C6D53] text-xs sm:text-sm mt-2 uppercase tracking-widest font-bold">
-            Huyền Cơ AI • Biometric Palmistry
-          </p>
-          <div className="w-24 h-0.5 bg-[#8C6D53]/30 mx-auto mt-4" />
         </div>
 
         {/* Main Tab Navigation */}
-        <div className="flex justify-center gap-2 mb-8 bg-[#fdfbf7]/60 p-2.5 rounded-2xl border border-[#D9C3B0]/60 max-w-xl mx-auto">
-          <button
-            onClick={() => setActiveMainTab("overview")}
-            className={`flex-1 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeMainTab === "overview"
-                ? "bg-amber-800 text-white shadow-md"
-                : "bg-white/40 text-[#5C3E21] hover:bg-white/80 border border-[#D9C3B0]/30"
-            }`}
-          >
-            Tổng Quan
-          </button>
-          <button
-            onClick={() => setActiveMainTab("lines")}
-            className={`flex-1 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeMainTab === "lines"
-                ? "bg-amber-800 text-white shadow-md"
-                : "bg-white/40 text-[#5C3E21] hover:bg-white/80 border border-[#D9C3B0]/30"
-            }`}
-          >
-            Đường Chỉ Tay
-          </button>
-          <button
-            onClick={() => setActiveMainTab("aspects")}
-            className={`flex-1 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-              activeMainTab === "aspects"
-                ? "bg-amber-800 text-white shadow-md"
-                : "bg-white/40 text-[#5C3E21] hover:bg-white/80 border border-[#D9C3B0]/30"
-            }`}
-          >
-            Khía Cạnh Cuộc Sống
-          </button>
+        <div className="flex justify-center gap-2 mb-8 bg-[#120F1D] p-1.5 rounded-2xl border border-[#D4AF37]/25 max-w-xl mx-auto">
+          {[
+            { id: "overview", label: "Tổng Quan Mệnh Lý" },
+            { id: "lines", label: "Đường Chỉ Chính" },
+            { id: "aspects", label: "4 Phương Diện" },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActiveMainTab(t.id as any)}
+              className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeMainTab === t.id
+                  ? "hc-gold-btn"
+                  : "text-[#C5B386] hover:text-white hover:bg-white/5"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
           {/* Left Column: Visual Analysis */}
-          <div className="lg:col-span-5 bg-[#fdfbf7]/80 border border-[#D9C3B0] rounded-2xl p-5 shadow-lg backdrop-blur-sm">
-            <h2 className="text-xs font-black uppercase text-[#5C3E21] tracking-widest mb-4 flex items-center gap-2 border-b border-[#D9C3B0]/40 pb-2">
-              <span>🖐️</span> Sơ Đồ Chỉ Tay Sinh Trắc
+          <div className="lg:col-span-5 hc-card rounded-3xl p-5 sm:p-6">
+            <h2 className="text-xs font-bold uppercase text-[#E8C96A] tracking-[0.18em] mb-4 flex items-center gap-2 border-b border-[#D4AF37]/15 pb-3">
+              <SparkleIcon size={14} />
+              <span>Sơ Đồ Chỉ Tay Định Vị</span>
             </h2>
-            
-            <div className="relative aspect-square w-full max-w-sm mx-auto rounded-xl overflow-hidden border border-[#D9C3B0] bg-[#eae2d5] shadow-inner mb-4">
+
+            <div
+              className="relative aspect-[3/4] w-full max-w-sm mx-auto rounded-2xl overflow-hidden border border-[#D4AF37]/45 shadow-[0_12px_40px_rgba(0,0,0,0.65)] mb-4 flex items-center justify-center p-4"
+              style={{
+                backgroundImage: "url('/images/palmbg.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundColor: "#EFE6D5",
+              }}
+            >
               {analysis.annotatedImage ? (
-                <img 
-                  src={analysis.annotatedImage.startsWith("data:") || analysis.annotatedImage.startsWith("http")
-                    ? analysis.annotatedImage 
-                    : (typeof window !== "undefined" && window.location.hostname.includes("calnovaai.com")
-                        ? `https://api.calnovaai.com/glowlab${analysis.annotatedImage}`
-                        : `https://api.calnovaai.com/glowlab${analysis.annotatedImage}`)
-                  } 
+                <img
+                  src={
+                    analysis.annotatedImage.startsWith("data:") ||
+                    analysis.annotatedImage.startsWith("http")
+                      ? analysis.annotatedImage
+                      : `https://api.calnovaai.com/glowlab${analysis.annotatedImage}`
+                  }
                   alt="Bản đồ chỉ tay"
-                  className="w-full h-full object-contain"
+                  className="w-[88%] h-[88%] object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.35)] relative z-10"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[#8C6D53] text-sm">
+                <div className="w-full h-full flex items-center justify-center text-[#5C3E21] font-semibold text-sm relative z-10">
                   Không có ảnh phân tích
                 </div>
               )}
             </div>
-            
-            <p className="text-[10px] text-center text-[#8C6D53] italic">
-              Ảnh chụp lòng bàn tay đã được AI định vị các đường chỉ chính.
-            </p>
+
+            <div className="bg-[#0B0912]/90 p-3.5 rounded-2xl border border-[#D4AF37]/20 text-center">
+              <span className="text-[11px] text-[#C5B386]">
+                Hệ thống đã định vị{" "}
+                <strong className="text-[#FFF3C4]">
+                  {analysis.palmLinesDetected || analysis.interpretations?.length || 3} đường chỉ chính
+                </strong>{" "}
+                trên lòng bàn tay của bạn.
+              </span>
+            </div>
           </div>
 
           {/* Right Column: Details */}
-          <div className="lg:col-span-7 bg-[#fdfbf7]/80 border border-[#D9C3B0] rounded-2xl p-6 sm:p-8 shadow-lg min-h-[420px]">
-            
-            {/* 1. TỔNG QUAN */}
-            {activeMainTab === "overview" && (
-              <div className="space-y-6">
-                <div className="border-b border-[#D9C3B0]/40 pb-4">
-                  <h2 className="text-xl font-bold text-[#5C3E21] flex items-center gap-2 mb-2">
-                    <span>✨</span> Tổng Quan Mệnh Lý
-                  </h2>
-                  <p className="text-xs text-[#8C6D53] uppercase tracking-wider font-bold">
-                    Luận giải tổng hợp sinh trắc học chỉ tay
-                  </p>
+          <div className="lg:col-span-7 hc-card rounded-3xl p-6 sm:p-8 min-h-[440px] flex flex-col justify-between">
+            <div>
+              {/* 1. TỔNG QUAN */}
+              {activeMainTab === "overview" && (
+                <div className="space-y-6">
+                  <div className="border-b border-[#D4AF37]/15 pb-4">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#D4AF37] block mb-1">
+                      Tổng Hợp Khí Sắc & Chưởng Tướng
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-serif font-bold text-white">
+                      Tổng Quan Thủ Tướng Học
+                    </h2>
+                  </div>
+
+                  <div className="text-[#EFECE6] text-sm sm:text-base leading-8 whitespace-pre-line bg-[#0B0912]/85 p-5 sm:p-6 rounded-2xl border border-[#D4AF37]/15">
+                    {analysis.summaryText}
+                  </div>
                 </div>
+              )}
 
-                <div className="text-[#5C3E21] text-sm sm:text-base leading-8 whitespace-pre-line bg-white/40 p-5 rounded-xl border border-[#D9C3B0]/20">
-                  {analysis.summaryText}
-                </div>
-              </div>
-            )}
+              {/* 2. ĐƯỜNG CHỈ TAY */}
+              {activeMainTab === "lines" && (
+                <div className="space-y-6">
+                  <div className="border-b border-[#D4AF37]/15 pb-4">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#D4AF37] block mb-1">
+                      Phân Tích Tam Đạo & Phụ Tuyến
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-serif font-bold text-white">
+                      Chi Tiết Từng Đường Chỉ Tay
+                    </h2>
+                  </div>
 
-            {/* 2. ĐƯỜNG CHỈ TAY */}
-            {activeMainTab === "lines" && (
-              <div className="space-y-6">
-                <div className="border-b border-[#D9C3B0]/40 pb-4">
-                  <h2 className="text-xl font-bold text-[#5C3E21] mb-2">
-                    🔎 Chi Tiết Các Đường Chỉ
-                  </h2>
-                  <p className="text-xs text-[#8C6D53] uppercase tracking-wider font-bold">
-                    Chọn từng đường chỉ để xem phân tích chi tiết
-                  </p>
-                </div>
+                  {analysis.interpretations && analysis.interpretations.length > 0 ? (
+                    <>
+                      <div className="flex flex-wrap gap-2 p-1.5 bg-[#0B0912] rounded-2xl border border-[#D4AF37]/20">
+                        {analysis.interpretations.map((item) => (
+                          <button
+                            key={item.id || item.lineType}
+                            onClick={() => setActiveLineType(item.lineType)}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              (activeLineType || "").toLowerCase() === (item.lineType || "").toLowerCase()
+                                ? "hc-gold-btn"
+                                : "text-[#C5B386] hover:text-white"
+                            }`}
+                          >
+                            {getLineName(item.lineType).split(" (")[0]}
+                          </button>
+                        ))}
+                      </div>
 
-                {/* Sub-tabs for interpretations */}
-                {analysis.interpretations && analysis.interpretations.length > 0 ? (
-                  <>
-                    <div className="flex flex-wrap gap-1.5 p-1 bg-[#f7f2ea]/60 rounded-xl border border-[#D9C3B0]/30">
-                      {analysis.interpretations.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => setActiveLineType(item.lineType)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                            activeLineType.toLowerCase() === item.lineType.toLowerCase()
-                              ? "bg-amber-800 text-white"
-                              : "text-[#5C3E21] hover:bg-white/50"
-                          }`}
-                        >
-                          {getLineName(item.lineType).split(" (")[0]}
-                        </button>
-                      ))}
-                    </div>
+                      {activeInterpretation ? (
+                        <div className="space-y-4 mt-4">
+                          <div className="flex flex-wrap justify-between items-center gap-2 bg-[#0B0912]/90 px-4 py-3 rounded-2xl border border-[#D4AF37]/20">
+                            <h3 className="font-serif font-bold text-base sm:text-lg text-[#FFF3C4]">
+                              {getLineName(activeInterpretation.lineType)}
+                            </h3>
+                            <span className="text-[10px] uppercase font-bold px-3 py-1 rounded-full bg-[#D4AF37]/15 text-[#E8C96A] border border-[#D4AF37]/30">
+                              Độ rõ nét vân tay: {Math.round((activeInterpretation.confidence || 0.9) * 100)}%
+                            </span>
+                          </div>
 
-                    {activeInterpretation ? (
-                      <div className="space-y-5 mt-4">
-                        <div className="flex justify-between items-center bg-white/50 px-4 py-2.5 rounded-xl border border-[#D9C3B0]/20">
-                          <h3 className="font-extrabold text-sm sm:text-base text-[#5C3E21]">
-                            {getLineName(activeInterpretation.lineType)}
-                          </h3>
-                          <span className="text-[10px] uppercase font-extrabold px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-800/10">
-                            Độ rõ nét: {(activeInterpretation.confidence * 100).toFixed(0)}%
-                          </span>
-                        </div>
+                          {activeInterpretation.pattern && (
+                            <div className="p-4 bg-[#0B0912]/80 rounded-2xl border border-[#D4AF37]/15">
+                              <h4 className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-widest mb-1">
+                                Hình Thái Đường Chỉ:
+                              </h4>
+                              <p className="text-xs sm:text-sm text-[#EFECE6] font-medium">
+                                {activeInterpretation.pattern}
+                              </p>
+                            </div>
+                          )}
 
-                        {activeInterpretation.pattern && (
-                          <div className="p-3.5 bg-white/60 rounded-xl border border-[#D9C3B0]/30">
-                            <h4 className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-1">
-                              Cấu trúc nhận dạng:
+                          <div className="bg-[#0B0912]/90 p-5 sm:p-6 rounded-2xl border border-[#D4AF37]/20">
+                            <h4 className="text-xs font-bold text-[#E8C96A] uppercase tracking-widest mb-3">
+                              Luận Giải Mệnh Lý:
                             </h4>
-                            <p className="text-xs text-[#5C3E21] font-semibold italic">
-                              {activeInterpretation.pattern}
+                            <p className="text-[#EFECE6] text-sm sm:text-base leading-8 whitespace-pre-line">
+                              {activeInterpretation.meaning}
                             </p>
                           </div>
-                        )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-center text-[#C5B386] italic">
+                          Chọn một đường chỉ tay ở trên để xem chi tiết.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-center text-[#C5B386] italic">
+                      Không tìm thấy phân tích đường chỉ tay riêng lẻ.
+                    </p>
+                  )}
+                </div>
+              )}
 
-                        <div className="bg-[#f7f2ea]/40 p-5 rounded-2xl border border-[#D9C3B0]/30">
-                          <h4 className="text-xs font-bold text-[#5C3E21] uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                            <span>📖</span> Luận giải chi tiết:
-                          </h4>
-                          <p className="text-[#5C3E21] text-sm sm:text-base leading-8 whitespace-pre-line">
-                            {activeInterpretation.meaning}
+              {/* 3. KHÍA CẠNH CUỘC SỐNG */}
+              {activeMainTab === "aspects" && (
+                <div className="space-y-6">
+                  <div className="border-b border-[#D4AF37]/15 pb-4">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#D4AF37] block mb-1">
+                      Ứng Dụng Thủ Tướng Vào Đời Sống
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-serif font-bold text-white">
+                      4 Phương Diện Vận Mệnh
+                    </h2>
+                  </div>
+
+                  {analysis.lifeAspects && analysis.lifeAspects.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {analysis.lifeAspects.map((aspect, idx) => (
+                        <div
+                          key={aspect.id || idx}
+                          className="bg-[#0B0912]/90 border border-[#D4AF37]/20 rounded-2xl p-5"
+                        >
+                          <h3 className="text-xs font-bold text-[#E8C96A] uppercase tracking-widest mb-2.5 border-b border-[#D4AF37]/15 pb-2">
+                            ✦ {getAspectName(aspect.aspect)}
+                          </h3>
+                          <p className="text-[#EFECE6] text-xs sm:text-sm leading-7">
+                            {aspect.content}
                           </p>
                         </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-center text-[#8C6D53] italic">Vui lòng chọn một đường chỉ tay.</p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-center text-[#8C6D53] italic">Không tìm thấy phân tích đường chỉ tay nào.</p>
-                )}
-              </div>
-            )}
-
-            {/* 3. KHÍA CẠNH CUỘC SỐNG */}
-            {activeMainTab === "aspects" && (
-              <div className="space-y-6">
-                <div className="border-b border-[#D9C3B0]/40 pb-4">
-                  <h2 className="text-xl font-bold text-[#5C3E21] mb-2">
-                    🧭 Xu Hướng Năng Lượng & Động Lực
-                  </h2>
-                  <p className="text-xs text-[#8C6D53] uppercase tracking-wider font-bold">
-                    Ảnh hưởng từ đường nét chỉ tay đến các lĩnh vực cuộc sống
-                  </p>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-center text-[#C5B386] italic">
+                      Không tìm thấy luận giải khía cạnh cuộc sống.
+                    </p>
+                  )}
                 </div>
+              )}
+            </div>
 
-                {analysis.lifeAspects && analysis.lifeAspects.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {analysis.lifeAspects.map((aspect) => (
-                      <div key={aspect.id} className="bg-white/40 border border-[#D9C3B0]/30 rounded-2xl p-5 shadow-sm">
-                        <h3 className="text-xs font-black text-amber-800 uppercase tracking-widest mb-2 border-b border-[#D9C3B0]/20 pb-1.5">
-                          {getAspectName(aspect.aspect)}
-                        </h3>
-                        <p className="text-[#5C3E21] text-xs sm:text-sm leading-6">
-                          {aspect.content}
-                        </p>
-                      </div>
-                    ))}
+            {/* Bottom Actions: Consult AI Coach + Save/Share/Reset */}
+            <div className="mt-8 pt-5 border-t border-[#D4AF37]/15 space-y-3">
+              <Link
+                href={`/huyen-co/chat?q=${aiConsultPrompt}`}
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#1A1429] hover:bg-[#231B38] border border-[#D4AF37]/40 flex items-center justify-between gap-3 transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <AICoachOracleIcon size={32} />
+                  <div className="text-left">
+                    <div className="text-xs font-bold uppercase tracking-wider text-[#FFF3C4]">
+                      Tham Vấn Cố Vấn Mệnh Lý AI Về Chỉ Tay Này
+                    </div>
+                    <div className="text-[11px] text-[#C5B386]">
+                      Đối chiếu Tam Đạo chỉ tay với lá số Tử Vi để hỏi sâu về Sự nghiệp & Tình duyên
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-xs text-center text-[#8C6D53] italic">Không tìm thấy luận giải khía cạnh cuộc sống.</p>
-                )}
-              </div>
-            )}
+                </div>
+                <span className="text-[#E8C96A] font-bold group-hover:translate-x-1 transition-transform">
+                  →
+                </span>
+              </Link>
 
-            {/* Action Buttons: Save & Share for Scanning Page */}
-            {isScanningPage && (
-              <div className="mt-8 pt-4 border-t border-[#D9C3B0]/30 flex flex-col gap-2">
-                {saveStatus === "unsaved" && (
-                  <button
-                    onClick={onSave}
-                    className="w-full py-2.5 bg-gradient-to-r from-amber-800 to-amber-950 hover:from-amber-900 hover:to-amber-950 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-amber-800/10 cursor-pointer"
-                  >
-                    {token ? "Lưu kết quả" : "Đăng nhập để lưu kết quả"}
-                  </button>
-                )}
-                {saveStatus === "saving" && (
-                  <button disabled className="w-full py-2.5 bg-amber-100/50 text-[#5C3E21]/60 text-xs font-bold uppercase tracking-widest rounded-xl cursor-wait">
-                    Đang lưu trữ...
-                  </button>
-                )}
-                {saveStatus === "saved" && (
-                  <div className="flex gap-2">
+              {isScanningPage && (
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  {saveStatus === "unsaved" && (
+                    <button
+                      onClick={onSave}
+                      className="flex-1 py-3 hc-gold-btn font-bold text-xs uppercase tracking-widest rounded-xl cursor-pointer"
+                    >
+                      {token ? "Lưu Kết Quả Vào Sớ Lụa" : "Đăng Nhập Để Lưu Kết Quả"}
+                    </button>
+                  )}
+                  {saveStatus === "saving" && (
+                    <button
+                      disabled
+                      className="flex-1 py-3 bg-[#D4AF37]/20 text-[#E8C96A] text-xs font-bold uppercase tracking-widest rounded-xl cursor-wait"
+                    >
+                      Đang lưu trữ...
+                    </button>
+                  )}
+                  {saveStatus === "saved" && (
                     <button
                       onClick={onShare}
-                      className="flex-1 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-cyan-700/10 cursor-pointer"
+                      className="flex-1 py-3 hc-gold-btn font-bold text-xs uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      Chia sẻ kết quả 🔗
+                      <ShareSealIcon size={15} />
+                      <span>Chia Sẻ Kết Quả (Nhận Thưởng Tín Chỉ)</span>
                     </button>
+                  )}
+                  {saveStatus === "error" && (
+                    <button
+                      onClick={onSave}
+                      className="flex-1 py-3 bg-red-950 border border-red-500/50 text-red-200 font-bold text-xs uppercase tracking-widest rounded-xl cursor-pointer"
+                    >
+                      Thử Lưu Lại
+                    </button>
+                  )}
+                  {onReset && (
                     <button
                       onClick={onReset}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
+                      className="px-6 py-3 bg-[#0B0912] hover:bg-white/10 border border-[#D4AF37]/30 text-[#E8C96A] font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer"
                     >
-                      Quét mới
+                      Quét Lại Bàn Tay
                     </button>
-                  </div>
-                )}
-                {saveStatus === "error" && (
-                  <button
-                    onClick={onSave}
-                    className="w-full py-2.5 bg-red-950 border border-red-500 text-red-300 font-bold text-xs uppercase tracking-widest rounded-xl cursor-pointer"
-                  >
-                    Thử lưu lại (Gặp lỗi)
-                  </button>
-                )}
-              </div>
-            )}
-
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Viral CTA Card */}
-        <div className="mt-12 bg-gradient-to-br from-[#fcfbf9] to-[#f5ebd9] border-2 border-amber-800/20 rounded-3xl p-6 sm:p-8 text-center shadow-lg relative overflow-hidden max-w-4xl mx-auto">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(139,92,26,0.03))] pointer-events-none" />
-          <span className="text-4xl mb-4 block">📱</span>
-          <h2 className="text-xl sm:text-2xl font-black text-[#5C3E21] uppercase tracking-wider mb-2">
-            Giải Mã Bản Thân Cùng AI
-          </h2>
-          <p className="text-[#6D543F] text-sm sm:text-base leading-6 max-w-md mx-auto mb-6">
-            Khám phá trọn vẹn bản đồ sinh trắc học cá nhân bằng Trí tuệ Nhân tạo. Tải ứng dụng hoặc quét ngay trên web để nhận luận giải miễn phí!
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-3">
-            <Link 
-              href={`/huyen-co?ref=${refCode}`}
-              className="px-8 py-3 bg-amber-800 text-white font-bold rounded-full text-sm uppercase tracking-widest hover:bg-amber-900 transition-all shadow-md"
-            >
-              Quét Thử Miễn Phí
-            </Link>
-          </div>
-        </div>
-
       </div>
     </div>
   );

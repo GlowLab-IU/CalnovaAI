@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Be_Vietnam_Pro, Cormorant_Garamond, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PWAInstallBanner from "@/components/PWAInstallBanner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const beVietnamPro = Be_Vietnam_Pro({
+  variable: "--font-be-vietnam",
+  subsets: ["latin", "vietnamese"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin", "vietnamese"],
+  weight: ["500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -14,8 +21,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Huyền Cơ AI - Calnova",
-  description: "Cố vấn huyền học và tự khám phá bản thân bằng AI",
+  title: "Huyền Cơ Các — Tinh Hoa Mệnh Lý & Nhân Tướng Học AI",
+  description: "Hệ sinh thái chiêm nghiệm Diện Tướng, Thủ Tướng, Tinh Bàn Tử Vi 12 Cung và Quẻ Bài Cổ Truyền ứng dụng Trí Tuệ Nhân Tạo.",
 };
 
 export default function RootLayout({
@@ -25,8 +32,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="vi"
+      className={`${beVietnamPro.variable} ${cormorantGaramond.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <link rel="manifest" href="/manifest.json" />

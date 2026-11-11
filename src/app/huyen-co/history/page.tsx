@@ -4,10 +4,16 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { encodeId } from "@/utils/hashId";
+import HuyenCoHeader from "../components/HuyenCoHeader";
+import {
+  FacePhysiognomyIcon,
+  PalmReadingIcon,
+  ScrollHistoryIcon,
+  ShareSealIcon,
+  SparkleIcon,
+} from "../components/HuyenCoIcons";
 
 const BASE_URL = "https://api.calnovaai.com/glowlab";
-
-// ảnh MinIO thường hết hạn sau 7 ngày hoặc xóa theo policy
 const IMAGE_EXPIRY_DAYS = 7;
 
 type Tab = "face" | "palm";
@@ -54,7 +60,7 @@ interface PalmRecord {
 
 const FACE_SHAPE_VI: Record<string, string> = {
   Oval: "Trái Xoan",
-  Round: "Tròn",
+  Round: "Viên Tự (Tròn)",
   Square: "Chữ Điền",
   Heart: "Trái Tim",
   Diamond: "Kim Cương",
@@ -81,13 +87,6 @@ const LINE_TYPE_VI: Record<string, string> = {
   head: "Trí Đạo",
   fate: "Định Mệnh",
   sun: "Thái Dương",
-};
-
-const ASPECT_EMOJI: Record<string, string> = {
-  health: "❤️",
-  career: "💼",
-  relationships: "💞",
-  personality: "👤",
 };
 
 const ASPECT_NAME_VI: Record<string, string> = {
@@ -125,23 +124,34 @@ function formatTime(dateStr: string) {
 
 function ExpiredImagePlaceholder({ type }: { type: "face" | "palm" }) {
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-[#f0e8d8]/60 gap-2 p-3 text-center">
-      <span className="text-2xl">🔒</span>
-      <p className="text-[10px] text-[#8C6D53] leading-relaxed font-medium">
-        Vì lý do bảo mật cho khách hàng,<br />
-        ảnh sẽ tự xóa sau {IMAGE_EXPIRY_DAYS} ngày.
+    <div className="w-full h-full flex flex-col items-center justify-center bg-[#0B0912] gap-2.5 p-4 text-center">
+      <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center text-[#E8C96A]">
+        <ScrollHistoryIcon size={18} />
+      </div>
+      <p className="text-[11px] text-[#C5B386] leading-relaxed">
+        Để bảo mật hình ảnh cá nhân, ảnh gốc tự động ẩn sau {IMAGE_EXPIRY_DAYS} ngày. Bản luận giải vẫn được lưu trữ trọn vẹn.
       </p>
       <Link
         href={type === "face" ? "/huyen-co/face-scan" : "/huyen-co/palm-scan"}
-        className="text-[10px] text-amber-800 font-bold underline mt-1"
+        className="text-[10px] text-[#E8C96A] font-bold uppercase tracking-wider hover:underline mt-1"
       >
-        Quét lại để xem ảnh mới →
+        Quét bản mới →
       </Link>
     </div>
   );
 }
 
-function ImageWithFallback({ src, alt, dateStr, type }: { src: string; alt: string; dateStr: string; type: "face" | "palm" }) {
+function ImageWithFallback({
+  src,
+  alt,
+  dateStr,
+  type,
+}: {
+  src: string;
+  alt: string;
+  dateStr: string;
+  type: "face" | "palm";
+}) {
   const [failed, setFailed] = useState(false);
   const likely = isImageLikelyExpired(dateStr);
 
@@ -159,7 +169,6 @@ function ImageWithFallback({ src, alt, dateStr, type }: { src: string; alt: stri
   );
 }
 
-/* ───── Extract face body part summaries from physiognomyResult ───── */
 function extractFaceBodyParts(physiognomyResult: any): { part: string; summary: string }[] {
   if (!physiognomyResult || typeof physiognomyResult !== "object") return [];
 
@@ -179,14 +188,12 @@ function extractFaceBodyParts(physiognomyResult: any): { part: string; summary: 
 
     if (text) {
       const label = BODY_PART_LABELS[key] || key;
-      // Avoid duplicates (e.g. "eyes" and "eye" map to same label)
       if (!parts.find((p) => p.part === label)) {
-        parts.push({ part: label, summary: text.length > 80 ? text.substring(0, 80) + "…" : text });
+        parts.push({ part: label, summary: text.length > 85 ? text.substring(0, 85) + "…" : text });
       }
     }
   }
 
-  // Also check parts.* structure (template format)
   const partsObj = physiognomyResult.parts;
   if (partsObj && typeof partsObj === "object") {
     for (const key of keys) {
@@ -196,23 +203,23 @@ function extractFaceBodyParts(physiognomyResult: any): { part: string; summary: 
         if (!parts.find((p) => p.part === label)) {
           const text = arr.map((x: any) => x.meaning || x.description || "").filter(Boolean).join(". ");
           if (text) {
-            parts.push({ part: label, summary: text.length > 80 ? text.substring(0, 80) + "…" : text });
+            parts.push({ part: label, summary: text.length > 85 ? text.substring(0, 85) + "…" : text });
           }
         }
       }
     }
   }
 
-  return parts.slice(0, 6); // Max 6 body parts
+  return parts.slice(0, 6);
 }
 
 function extractLifePhases(physiognomyResult: any): string[] {
   if (!physiognomyResult?.life_phases) return [];
   const phases = physiognomyResult.life_phases;
   const items: string[] = [];
-  if (phases.early_life) items.push(`🌅 Trước 30: ${phases.early_life.substring(0, 60)}…`);
-  if (phases.mid_life) items.push(`☀️ 30-50: ${phases.mid_life.substring(0, 60)}…`);
-  if (phases.late_life) items.push(`🌌 Sau 50: ${phases.late_life.substring(0, 60)}…`);
+  if (phases.early_life) items.push(`Tiền vận: ${phases.early_life.substring(0, 65)}…`);
+  if (phases.mid_life) items.push(`Trung vận: ${phases.mid_life.substring(0, 65)}…`);
+  if (phases.late_life) items.push(`Hậu vận: ${phases.late_life.substring(0, 65)}…`);
   return items;
 }
 
@@ -233,17 +240,39 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const t = localStorage.getItem("authToken");
+    const t =
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("token");
     const u = localStorage.getItem("authUser");
-    if (!t || !u) {
+    if (!t) {
       router.push("/huyen-co");
       return;
     }
     setToken(t);
-    try {
-      setUser(JSON.parse(u));
-    } catch { /* ignore */ }
-  }, []);
+    if (u && u !== "undefined" && u !== "null") {
+      try {
+        setUser(JSON.parse(u));
+      } catch {
+        /* ignore */
+      }
+    } else {
+      fetch("https://api.calnovaai.com/glowlab/auth/me", {
+        headers: { Authorization: `Bearer ${t}` },
+      })
+        .then((r) => r.json())
+        .then((me) => {
+          if ((me.code === 0 || me.code === "OPERATION_SUCCESS") && me.data) {
+            localStorage.setItem("authToken", t);
+            localStorage.setItem("authUser", JSON.stringify(me.data));
+            setUser(me.data);
+          } else {
+            router.push("/huyen-co");
+          }
+        })
+        .catch(() => router.push("/huyen-co"));
+    }
+  }, [router]);
 
   useEffect(() => {
     if (!token || !user?.id) return;
@@ -264,24 +293,20 @@ export default function HistoryPage() {
 
         if (faceRes.ok) {
           const fj = await faceRes.json();
-          // Face controller wraps with GeneralResponse: { code, data: [...] }
           const rows = fj.data ?? fj ?? [];
           setFaceHistory(Array.isArray(rows) ? rows : []);
         }
 
         if (palmRes.ok) {
           const pj = await palmRes.json();
-          // Palm controller returns raw from service: { success, data: [...] }
-          // But might also be double-wrapped if TSOA adds GeneralResponse
           let rows = pj.data ?? pj ?? [];
-          // Handle double-wrapping: { data: { success: true, data: [...] } } or { success: true, data: [...] }
           if (rows && !Array.isArray(rows) && rows.data) {
             rows = rows.data;
           }
           setPalmHistory(Array.isArray(rows) ? rows : []);
         }
-      } catch (e: any) {
-        setError("Không thể tải lịch sử. Vui lòng thử lại.");
+      } catch {
+        setError("Không thể tải sớ lụa lịch sử. Vui lòng thử lại.");
       } finally {
         setLoading(false);
       }
@@ -291,68 +316,63 @@ export default function HistoryPage() {
   }, [token, user]);
 
   return (
-    <div
-      className="min-h-screen font-sans pb-20 relative"
-      style={{
-        backgroundImage: "url('/images/palmbg.png')",
-        backgroundSize: "100% 100%",
-        backgroundRepeat: "no-repeat",
-        backgroundColor: "#fbf8f3",
-      }}
-    >
-      <div className="absolute inset-0 bg-[#fbf8f3]/10 pointer-events-none" />
+    <div className="min-h-screen bg-[#07060B] text-[#EFECE6] font-sans pb-20 relative overflow-x-hidden">
+      {/* Subtle Oriental Celestial Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[70vw] h-[50vw] bg-[#D4AF37]/[0.05] rounded-full blur-[140px]" />
+        <div className="absolute inset-0 opacity-[0.1] bg-[radial-gradient(#D4AF37_0.75px,transparent_0.75px)] [background-size:48px_48px]" />
+      </div>
 
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full bg-[#fcf9f5]/90 backdrop-blur border-b border-[#D9C3B0] px-6 py-4 shadow-sm flex items-center justify-between max-w-5xl mx-auto rounded-b-2xl">
-        <Link href="/huyen-co" className="flex items-center gap-2 text-[#5C3E21] hover:text-amber-800 transition-all">
-          <span className="text-xl">←</span>
-          <span className="text-xs uppercase font-bold tracking-widest">Trang chủ</span>
-        </Link>
-        <h1 className="text-xs sm:text-sm font-bold tracking-widest text-amber-800 uppercase font-serif">
-          🗂️ Lịch Sử Phân Tích
-        </h1>
-        <div className="w-20" />
-      </header>
+      {/* Unified Header */}
+      <HuyenCoHeader user={user} subtitle="Sớ Lụa Lưu Trữ Bản Đồ Nhân Tướng" />
 
-      <div className="max-w-5xl mx-auto px-4 pt-8 relative z-10">
-
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 relative z-10">
         {/* Page Title */}
         <div className="text-center mb-8">
-          <div className="inline-block text-4xl mb-3">📜</div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#5C3E21] uppercase tracking-widest">
-            Lịch Sử Huyền Cơ
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#120F1D] border border-[#D4AF37]/30 mb-3 text-[#E8C96A]">
+            <ScrollHistoryIcon size={28} />
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#D4AF37] mb-1">
+            Tàng Thư Cá Nhân • {user?.lastName} {user?.firstName}
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-serif font-bold text-white tracking-wide">
+            Sớ Lụa Lịch Sử Chiêm Nghiệm
           </h1>
-          <p className="text-[#8C6D53] text-xs mt-2 uppercase tracking-widest font-bold">
-            {user?.lastName} {user?.firstName} • Tất cả kết quả đã lưu
-          </p>
-          <div className="w-20 h-0.5 bg-[#8C6D53]/30 mx-auto mt-3" />
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex justify-center gap-3 mb-8">
+        <div className="flex justify-center gap-3 mb-9">
           <button
             onClick={() => setActiveTab("face")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all border ${
+            className={`flex items-center gap-2.5 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all border cursor-pointer ${
               activeTab === "face"
-                ? "bg-amber-800 text-white border-amber-800 shadow-md"
-                : "bg-white/60 text-[#5C3E21] border-[#D9C3B0] hover:bg-white/90"
+                ? "hc-gold-btn border-transparent"
+                : "bg-[#120F1D] text-[#C5B386] border-[#D4AF37]/25 hover:text-white hover:border-[#D4AF37]/50"
             }`}
           >
-            <span>👤</span> Tướng Mặt
-            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">
+            <span>Diện Tướng Học</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full ${
+                activeTab === "face" ? "bg-black/20 text-black" : "bg-white/10 text-[#E8C96A]"
+              }`}
+            >
               {faceHistory.length}
             </span>
           </button>
           <button
             onClick={() => setActiveTab("palm")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all border ${
+            className={`flex items-center gap-2.5 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-wider transition-all border cursor-pointer ${
               activeTab === "palm"
-                ? "bg-amber-800 text-white border-amber-800 shadow-md"
-                : "bg-white/60 text-[#5C3E21] border-[#D9C3B0] hover:bg-white/90"
+                ? "hc-gold-btn border-transparent"
+                : "bg-[#120F1D] text-[#C5B386] border-[#D4AF37]/25 hover:text-white hover:border-[#D4AF37]/50"
             }`}
           >
-            <span>🖐️</span> Chỉ Tay
-            <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">
+            <span>Thủ Tướng Học</span>
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full ${
+                activeTab === "palm" ? "bg-black/20 text-black" : "bg-white/10 text-[#E8C96A]"
+              }`}
+            >
               {palmHistory.length}
             </span>
           </button>
@@ -361,37 +381,34 @@ export default function HistoryPage() {
         {/* Content */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="w-10 h-10 rounded-full border-4 border-t-amber-700 border-[#D9C3B0]/30 animate-spin" />
-            <p className="text-[#8C6D53] text-sm">Đang tải lịch sử của bạn...</p>
+            <div className="w-10 h-10 rounded-full border-2 border-t-[#D4AF37] border-[#D4AF37]/20 animate-spin" />
+            <p className="text-[#C5B386] text-xs uppercase tracking-widest">
+              Đang mở sớ lụa lưu trữ...
+            </p>
           </div>
         ) : error ? (
-          <div className="text-center py-16 text-red-700 bg-red-50 rounded-2xl border border-red-200 p-6">
-            <span className="text-4xl block mb-3">⚠️</span>
-            <p className="font-bold text-sm">{error}</p>
+          <div className="text-center py-14 text-red-200 bg-red-950/30 rounded-3xl border border-red-500/30 p-6">
+            <p className="font-semibold text-sm">{error}</p>
           </div>
         ) : activeTab === "face" ? (
           <FaceHistoryGrid records={faceHistory} />
         ) : (
           <PalmHistoryGrid records={palmHistory} />
         )}
-
       </div>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   FACE HISTORY GRID — Enriched with body parts & life phases
-   ═══════════════════════════════════════════════════════════════ */
 function FaceHistoryGrid({ records }: { records: FaceRecord[] }) {
   if (records.length === 0) {
     return (
       <EmptyState
-        icon="👤"
-        title="Chưa có lịch sử tướng mặt"
-        desc="Bắt đầu quét khuôn mặt để nhận luận giải nhân tướng học AI."
+        type="face"
+        title="Chưa Có Bản Lưu Diện Tướng"
+        desc="Quét khuôn mặt để nhận luận giải chi tiết Tam Đình, Ngũ Quan và lưu vào sớ lụa cá nhân."
         href="/huyen-co/face-scan"
-        cta="Quét Tướng Mặt Ngay"
+        cta="Khai Mở Diện Tướng Ngay"
       />
     );
   }
@@ -408,96 +425,120 @@ function FaceHistoryGrid({ records }: { records: FaceRecord[] }) {
         return (
           <div
             key={rec.id}
-            className="bg-[#fdfbf7]/90 border border-[#D9C3B0] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row"
+            className="hc-card hc-card-hover rounded-3xl overflow-hidden flex flex-col sm:flex-row"
           >
-            {/* Image — fixed width on left */}
-            <div className="w-full sm:w-48 sm:min-h-[280px] bg-[#eae2d5] relative overflow-hidden flex-shrink-0">
-              <ImageWithFallback
-                src={imageSrc}
-                alt="Tướng mặt"
-                dateStr={dateStr}
-                type="face"
-              />
-              {/* Date badge */}
-              <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-bold backdrop-blur">
+            {/* Image */}
+            <div className="w-full sm:w-48 sm:min-h-[280px] bg-[#0B0912] relative overflow-hidden flex-shrink-0 border-b sm:border-b-0 sm:border-r border-[#D4AF37]/15">
+              <ImageWithFallback src={imageSrc} alt="Tướng mặt" dateStr={dateStr} type="face" />
+              <div className="absolute top-2.5 left-2.5 bg-black/75 border border-[#D4AF37]/30 text-[#FFF3C4] text-[10px] px-2.5 py-0.5 rounded-full font-semibold backdrop-blur">
                 {formatDate(dateStr)}
               </div>
             </div>
 
-            {/* Info — expands right */}
-            <div className="p-4 flex flex-col flex-1 min-w-0">
-              {/* Header: Shape + Score */}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] text-amber-800 font-black uppercase tracking-widest bg-amber-100/60 px-2 py-0.5 rounded-full border border-amber-800/10">
-                  {FACE_SHAPE_VI[rec.faceShape] || rec.faceShape || "Không rõ"}
+            {/* Info */}
+            <div className="p-5 flex flex-col flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[10px] text-[#FFF3C4] font-bold uppercase tracking-wider bg-[#D4AF37]/15 px-2.5 py-0.5 rounded-full border border-[#D4AF37]/30">
+                  {FACE_SHAPE_VI[rec.faceShape] || rec.faceShape || "Cân Đối"}
                 </span>
-                <span className="text-xs font-black text-[#5C3E21]">
+                <span className="text-xs font-serif font-bold text-[#E8C96A]">
                   {rec.harmonyScore > 0 ? `Hài hòa: ${rec.harmonyScore}%` : "—"}
                 </span>
               </div>
 
-              {/* Summary Text */}
-              <p className="text-xs text-[#6D543F] leading-relaxed line-clamp-3 mb-3">
+              <p className="text-xs text-[#C5B386] leading-relaxed line-clamp-3 mb-3">
                 {rec.resultText || "Không có mô tả"}
               </p>
 
-              {/* Body Parts Summary */}
               {bodyParts.length > 0 && (
-                <div className="mb-3 border-t border-[#D9C3B0]/30 pt-2">
-                  <h4 className="text-[9px] font-black text-amber-800 uppercase tracking-widest mb-1.5">
-                    📋 Phân tích ngũ quan:
+                <div className="mb-3 border-t border-[#D4AF37]/15 pt-2.5">
+                  <h4 className="text-[10px] font-bold text-[#E8C96A] uppercase tracking-wider mb-1.5">
+                    Ngũ Quan Trọng Điểm:
                   </h4>
                   <div className="space-y-1">
-                    {bodyParts.slice(0, 4).map((bp) => (
+                    {bodyParts.slice(0, 3).map((bp) => (
                       <div key={bp.part} className="flex items-start gap-1.5">
-                        <span className="text-[9px] font-bold text-[#5C3E21] bg-white/60 px-1.5 py-0.5 rounded border border-[#D9C3B0]/20 whitespace-nowrap flex-shrink-0">
+                        <span className="text-[9px] font-bold text-[#FFF3C4] bg-[#0B0912] px-1.5 py-0.5 rounded border border-[#D4AF37]/20 whitespace-nowrap flex-shrink-0">
                           {bp.part}
                         </span>
-                        <p className="text-[10px] text-[#6D543F] leading-snug line-clamp-1">
+                        <p className="text-[11px] text-[#C5B386] leading-snug line-clamp-1">
                           {bp.summary}
                         </p>
                       </div>
                     ))}
-                    {bodyParts.length > 4 && (
-                      <p className="text-[9px] text-[#8C6D53] italic">+{bodyParts.length - 4} bộ phận khác...</p>
-                    )}
                   </div>
                 </div>
               )}
 
-              {/* Key Points */}
               {keyPoints.length > 0 && (
                 <div className="mb-3">
                   {keyPoints.map((point, idx) => (
                     <div key={idx} className="flex items-start gap-1.5 mb-0.5">
-                      <span className="text-yellow-600 text-[10px] mt-0.5">✦</span>
-                      <p className="text-[10px] text-[#5C3E21] leading-snug line-clamp-1">{point}</p>
+                      <span className="text-[#D4AF37] text-[10px] mt-0.5">✦</span>
+                      <p className="text-[11px] text-[#EFECE6] leading-snug line-clamp-1">{point}</p>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Life Phases (compact) */}
               {lifePhases.length > 0 && (
-                <div className="mb-3 bg-[#f7f2ea]/50 rounded-lg p-2 border border-[#D9C3B0]/20">
-                  <h4 className="text-[9px] font-black text-[#5C3E21] uppercase tracking-widest mb-1">
-                    🌅 Giai đoạn cuộc đời:
-                  </h4>
-                  {lifePhases.map((phase, idx) => (
-                    <p key={idx} className="text-[9px] text-[#6D543F] leading-snug line-clamp-1">{phase}</p>
+                <div className="mb-3 bg-[#0B0912]/80 rounded-xl p-2.5 border border-[#D4AF37]/15">
+                  {lifePhases.slice(0, 2).map((phase, idx) => (
+                    <p key={idx} className="text-[10px] text-[#C5B386] leading-snug line-clamp-1">
+                      • {phase}
+                    </p>
                   ))}
                 </div>
               )}
 
-              {/* Footer */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#D9C3B0]/30 mt-auto">
-                <span className="text-[10px] text-[#8C6D53]">{formatTime(dateStr)}</span>
-                <Link
-                  href={`/huyen-co/share/face-result?id=${encodeId(rec.id)}`}
-                  className="text-[10px] font-black text-amber-800 uppercase tracking-wider hover:underline flex items-center gap-1"
-                >
-                  Xem đầy đủ →
-                </Link>
+              <div className="flex items-center justify-between pt-3 border-t border-[#D4AF37]/15 mt-auto gap-2">
+                <span className="text-[10px] text-[#C5B386]/70">{formatTime(dateStr)}</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const hashed = encodeId(rec.id);
+                      const shareUrl = `${window.location.origin}/huyen-co/share/face-result?id=${hashed}`;
+                      try {
+                        await navigator.clipboard.writeText(shareUrl);
+                      } catch {}
+                      let msg = "Đã sao chép liên kết chia sẻ vào Clipboard!";
+                      try {
+                        const token = localStorage.getItem("authToken");
+                        const rawUser = localStorage.getItem("authUser");
+                        const parsedUser = rawUser ? JSON.parse(rawUser) : null;
+                        const oldCredits = Number(parsedUser?.credits ?? 0);
+                        await fetch(`${BASE_URL}/facial-analysis/shared/${rec.id}`);
+                        if (token) {
+                          const meRes = await fetch(`${BASE_URL}/auth/me`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          const meData = await meRes.json();
+                          if (meData?.data) {
+                            const newCredits = Number(meData.data.credits ?? oldCredits);
+                            localStorage.setItem("authUser", JSON.stringify(meData.data));
+                            if (newCredits > oldCredits) {
+                              msg = `Đã sao chép liên kết chia sẻ! Bạn nhận được +${
+                                newCredits - oldCredits
+                              } Tín Chỉ thưởng chia sẻ!`;
+                            }
+                          }
+                        }
+                      } catch {}
+                      alert(msg);
+                    }}
+                    className="text-[11px] font-bold text-[#C5B386] hover:text-[#FFF3C4] uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                  >
+                    <ShareSealIcon size={13} />
+                    <span>Chia sẻ</span>
+                  </button>
+                  <Link
+                    href={`/huyen-co/share/face-result?id=${encodeId(rec.id)}`}
+                    className="text-[11px] font-bold text-[#E8C96A] uppercase tracking-wider hover:underline flex items-center gap-1"
+                  >
+                    Xem luận giải →
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -507,16 +548,13 @@ function FaceHistoryGrid({ records }: { records: FaceRecord[] }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PALM HISTORY GRID — Enriched with interpretations & aspects
-   ═══════════════════════════════════════════════════════════════ */
 function PalmHistoryGrid({ records }: { records: PalmRecord[] }) {
   if (records.length === 0) {
     return (
       <EmptyState
-        icon="🖐️"
-        title="Chưa có lịch sử chỉ tay"
-        desc="Bắt đầu quét lòng bàn tay để nhận luận giải đường sinh đạo, tâm đạo, trí đạo."
+        type="palm"
+        title="Chưa Có Bản Lưu Thủ Tướng"
+        desc="Quét lòng bàn tay để nhận luận giải Sinh Đạo, Trí Đạo, Tâm Đạo và lưu vào sớ lụa cá nhân."
         href="/huyen-co/palm-scan"
         cta="Quét Chỉ Tay Ngay"
       />
@@ -541,97 +579,122 @@ function PalmHistoryGrid({ records }: { records: PalmRecord[] }) {
         return (
           <div
             key={rec.id}
-            className="bg-[#fdfbf7]/90 border border-[#D9C3B0] rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row"
+            className="hc-card hc-card-hover rounded-3xl overflow-hidden flex flex-col sm:flex-row"
           >
-            {/* Image — fixed width on left */}
-            <div className="w-full sm:w-48 sm:min-h-[280px] bg-[#eae2d5] relative overflow-hidden flex-shrink-0">
-              <ImageWithFallback
-                src={imageSrc}
-                alt="Chỉ tay"
-                dateStr={dateStr}
-                type="palm"
-              />
-              <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-bold backdrop-blur">
+            {/* Image */}
+            <div className="w-full sm:w-48 sm:min-h-[280px] bg-[#0B0912] relative overflow-hidden flex-shrink-0 border-b sm:border-b-0 sm:border-r border-[#D4AF37]/15">
+              <ImageWithFallback src={imageSrc} alt="Chỉ tay" dateStr={dateStr} type="palm" />
+              <div className="absolute top-2.5 left-2.5 bg-black/75 border border-[#D4AF37]/30 text-[#FFF3C4] text-[10px] px-2.5 py-0.5 rounded-full font-semibold backdrop-blur">
                 {formatDate(dateStr)}
               </div>
               {rec.palmLinesDetected !== undefined && (
-                <div className="absolute top-2 right-2 bg-amber-800/80 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                <div className="absolute top-2.5 right-2.5 bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#FFF3C4] text-[10px] px-2 py-0.5 rounded-full font-bold backdrop-blur">
                   {rec.palmLinesDetected} đường
                 </div>
               )}
             </div>
 
             {/* Info */}
-            <div className="p-4 flex flex-col flex-1 min-w-0">
-              {/* Detected lines badges */}
+            <div className="p-5 flex flex-col flex-1 min-w-0">
               {detectedLines.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-2">
+                <div className="flex flex-wrap gap-1.5 mb-2.5">
                   {detectedLines.map((l) => (
-                    <span key={l} className="text-[9px] bg-amber-100/60 text-amber-900 border border-amber-800/10 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    <span
+                      key={l}
+                      className="text-[10px] bg-[#D4AF37]/15 text-[#FFF3C4] border border-[#D4AF37]/30 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider"
+                    >
                       {l}
                     </span>
                   ))}
                 </div>
               )}
 
-              {/* Summary Text */}
-              <p className="text-xs text-[#6D543F] leading-relaxed line-clamp-3 mb-3">
+              <p className="text-xs text-[#C5B386] leading-relaxed line-clamp-3 mb-3">
                 {rec.summaryText || "Không có mô tả"}
               </p>
 
-              {/* Interpretations Summary */}
               {interps.length > 0 && (
-                <div className="mb-3 border-t border-[#D9C3B0]/30 pt-2">
-                  <h4 className="text-[9px] font-black text-amber-800 uppercase tracking-widest mb-1.5">
-                    🔎 Chi tiết các đường chỉ:
+                <div className="mb-3 border-t border-[#D4AF37]/15 pt-2.5">
+                  <h4 className="text-[10px] font-bold text-[#E8C96A] uppercase tracking-wider mb-1.5">
+                    Đường Chỉ Chính:
                   </h4>
                   <div className="space-y-1">
-                    {interps.slice(0, 4).map((interp) => (
+                    {interps.slice(0, 3).map((interp) => (
                       <div key={interp.id} className="flex items-start gap-1.5">
-                        <span className="text-[9px] font-bold text-[#5C3E21] bg-white/60 px-1.5 py-0.5 rounded border border-[#D9C3B0]/20 whitespace-nowrap flex-shrink-0">
+                        <span className="text-[9px] font-bold text-[#FFF3C4] bg-[#0B0912] px-1.5 py-0.5 rounded border border-[#D4AF37]/20 whitespace-nowrap flex-shrink-0">
                           {LINE_TYPE_VI[interp.lineType.toLowerCase()] || interp.lineType}
                         </span>
-                        <p className="text-[10px] text-[#6D543F] leading-snug line-clamp-1">
+                        <p className="text-[11px] text-[#C5B386] leading-snug line-clamp-1">
                           {interp.meaning.length > 80 ? interp.meaning.substring(0, 80) + "…" : interp.meaning}
                         </p>
                       </div>
                     ))}
-                    {interps.length > 4 && (
-                      <p className="text-[9px] text-[#8C6D53] italic">+{interps.length - 4} đường khác...</p>
-                    )}
                   </div>
                 </div>
               )}
 
-              {/* Life Aspects Summary */}
               {aspects.length > 0 && (
-                <div className="mb-3 bg-[#f7f2ea]/50 rounded-lg p-2 border border-[#D9C3B0]/20">
-                  <h4 className="text-[9px] font-black text-[#5C3E21] uppercase tracking-widest mb-1">
-                    🧭 Khía cạnh cuộc sống:
-                  </h4>
-                  <div className="space-y-0.5">
-                    {aspects.slice(0, 4).map((asp) => (
-                      <div key={asp.id} className="flex items-start gap-1.5">
-                        <span className="text-[10px] flex-shrink-0">{ASPECT_EMOJI[asp.aspect] || "✨"}</span>
-                        <p className="text-[9px] text-[#6D543F] leading-snug line-clamp-1">
-                          <strong className="text-[#5C3E21]">{ASPECT_NAME_VI[asp.aspect] || asp.aspect}:</strong>{" "}
-                          {asp.content.length > 70 ? asp.content.substring(0, 70) + "…" : asp.content}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                <div className="mb-3 bg-[#0B0912]/80 rounded-xl p-2.5 border border-[#D4AF37]/15 space-y-1">
+                  {aspects.slice(0, 2).map((asp) => (
+                    <div key={asp.id} className="flex items-start gap-1.5">
+                      <SparkleIcon size={11} className="text-[#D4AF37] mt-0.5 shrink-0" />
+                      <p className="text-[10px] text-[#C5B386] leading-snug line-clamp-1">
+                        <strong className="text-[#EFECE6]">{ASPECT_NAME_VI[asp.aspect] || asp.aspect}:</strong>{" "}
+                        {asp.content}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Footer */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#D9C3B0]/30 mt-auto">
-                <span className="text-[10px] text-[#8C6D53]">{formatTime(dateStr)}</span>
-                <Link
-                  href={`/huyen-co/share/palm-result?id=${encodeId(rec.id)}`}
-                  className="text-[10px] font-black text-amber-800 uppercase tracking-wider hover:underline flex items-center gap-1"
-                >
-                  Xem đầy đủ →
-                </Link>
+              <div className="flex items-center justify-between pt-3 border-t border-[#D4AF37]/15 mt-auto gap-2">
+                <span className="text-[10px] text-[#C5B386]/70">{formatTime(dateStr)}</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const hashed = encodeId(rec.id);
+                      const shareUrl = `${window.location.origin}/huyen-co/share/palm-result?id=${hashed}`;
+                      try {
+                        await navigator.clipboard.writeText(shareUrl);
+                      } catch {}
+                      let msg = "Đã sao chép liên kết chia sẻ vào Clipboard!";
+                      try {
+                        const token = localStorage.getItem("authToken");
+                        const rawUser = localStorage.getItem("authUser");
+                        const parsedUser = rawUser ? JSON.parse(rawUser) : null;
+                        const oldCredits = Number(parsedUser?.credits ?? 0);
+                        await fetch(`${BASE_URL}/palm-analysis/shared/${rec.id}`);
+                        if (token) {
+                          const meRes = await fetch(`${BASE_URL}/auth/me`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          const meData = await meRes.json();
+                          if (meData?.data) {
+                            const newCredits = Number(meData.data.credits ?? oldCredits);
+                            localStorage.setItem("authUser", JSON.stringify(meData.data));
+                            if (newCredits > oldCredits) {
+                              msg = `Đã sao chép liên kết chia sẻ! Bạn nhận được +${
+                                newCredits - oldCredits
+                              } Tín Chỉ thưởng chia sẻ!`;
+                            }
+                          }
+                        }
+                      } catch {}
+                      alert(msg);
+                    }}
+                    className="text-[11px] font-bold text-[#C5B386] hover:text-[#FFF3C4] uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                  >
+                    <ShareSealIcon size={13} />
+                    <span>Chia sẻ</span>
+                  </button>
+                  <Link
+                    href={`/huyen-co/share/palm-result?id=${encodeId(rec.id)}`}
+                    className="text-[11px] font-bold text-[#E8C96A] uppercase tracking-wider hover:underline flex items-center gap-1"
+                  >
+                    Xem luận giải →
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -641,18 +704,29 @@ function PalmHistoryGrid({ records }: { records: PalmRecord[] }) {
   );
 }
 
-/* ───── Empty State ───── */
 function EmptyState({
-  icon, title, desc, href, cta
-}: { icon: string; title: string; desc: string; href: string; cta: string }) {
+  type,
+  title,
+  desc,
+  href,
+  cta,
+}: {
+  type: "face" | "palm";
+  title: string;
+  desc: string;
+  href: string;
+  cta: string;
+}) {
   return (
-    <div className="text-center py-16 bg-[#fdfbf7]/70 border border-[#D9C3B0]/40 rounded-3xl p-8">
-      <span className="text-5xl block mb-4">{icon}</span>
-      <h3 className="text-lg font-bold text-[#5C3E21] mb-2">{title}</h3>
-      <p className="text-sm text-[#8C6D53] mb-6 max-w-xs mx-auto leading-relaxed">{desc}</p>
+    <div className="text-center py-16 hc-card rounded-3xl p-8 max-w-lg mx-auto">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#0B0912] border border-[#D4AF37]/30 mb-4">
+        {type === "face" ? <FacePhysiognomyIcon size={44} /> : <PalmReadingIcon size={44} />}
+      </div>
+      <h3 className="text-xl font-serif font-bold text-white mb-2">{title}</h3>
+      <p className="text-xs sm:text-sm text-[#C5B386] mb-6 max-w-sm mx-auto leading-relaxed">{desc}</p>
       <Link
         href={href}
-        className="px-8 py-3 bg-amber-800 text-white font-bold rounded-full text-sm uppercase tracking-widest hover:bg-amber-900 transition-all shadow-md"
+        className="inline-block px-8 py-3.5 hc-gold-btn font-bold rounded-full text-xs uppercase tracking-widest"
       >
         {cta}
       </Link>

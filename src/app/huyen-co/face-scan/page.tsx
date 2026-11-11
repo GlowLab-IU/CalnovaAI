@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthModal from "../AuthModal";
 import FaceResultClient from "../share/face-result/FaceResultClient";
+import HuyenCoHeader from "../components/HuyenCoHeader";
+import ScanWaitingOverlay from "../components/ScanWaitingOverlay";
+import {
+  FacePhysiognomyIcon,
+  UploadImageIcon,
+  SparkleIcon,
+} from "../components/HuyenCoIcons";
 import { encodeId } from "@/utils/hashId";
 import { FaceLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
@@ -14,6 +21,7 @@ export default function FaceScanPage() {
   // Camera & Capture states
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // MediaPipe
   const faceLandmarkerRef = useRef<FaceLandmarker | null>(null);
@@ -26,6 +34,8 @@ export default function FaceScanPage() {
   const [isMirrored, setIsMirrored] = useState(false);
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
+  const [scanWarning, setScanWarning] = useState<string>("");
+  const scanWarningRef = useRef<string>("");
   
   // Processing States
   const [status, setStatus] = useState<"idle" | "capturing" | "uploading" | "success" | "error">("idle");
@@ -66,15 +76,32 @@ export default function FaceScanPage() {
     initMediaPipe();
 
     if (typeof window !== "undefined") {
-      const storedToken = localStorage.getItem("authToken");
+      const storedToken =
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("token");
       const storedUser = localStorage.getItem("authUser");
-      if (storedToken && storedUser) {
+      if (storedToken) {
         setToken(storedToken);
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error(e);
+        if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (e) {
+            console.error(e);
+          }
         }
+        fetch("https://api.calnovaai.com/glowlab/auth/me", {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        })
+          .then((r) => r.json())
+          .then((me) => {
+            if ((me.code === 0 || me.code === "OPERATION_SUCCESS") && me.data) {
+              localStorage.setItem("authToken", storedToken);
+              localStorage.setItem("authUser", JSON.stringify(me.data));
+              setUser(me.data);
+            }
+          })
+          .catch(() => {});
       }
     }
     startCamera();
@@ -145,7 +172,15 @@ export default function FaceScanPage() {
   };
 
   const renderLoop = () => {
-    if (!videoRef.current || !canvasRef.current || !faceLandmarkerRef.current || !cameraActive) return;
+    if (!videoRef.current || !canvasRef.current || !cameraActive) return;
+    
+    // Nếu MediaPipe chưa load xong, vẫn phải giữ vòng lặp chờ
+    if (!faceLandmarkerRef.current) {
+      if (status === "idle" && cameraActive) {
+        requestRef.current = requestAnimationFrame(renderLoop);
+      }
+      return;
+    }
     
     const video = videoRef.current;
     
@@ -174,16 +209,72 @@ export default function FaceScanPage() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       if (results.faceLandmarks && results.faceLandmarks.length > 0) {
-        // Auto-capture logic
-        if (detectionStartTimeRef.current === null) {
-          detectionStartTimeRef.current = performance.now();
-        } else if (performance.now() - detectionStartTimeRef.current > 1500) {
-          // If face detected continuously for 1.5s
-          if (status === "idle") {
-            setTimeout(() => {
-              handleCapture();
-            }, 0);
+        const landmarks = results.faceLandmarks[0];
+        let isQualityGood = true;
+        let currentWarning = "";
+
+        // 1. Check Face Angle (Yaw)
+        if (landmarks.length >= 454) {
+          const nose = landmarks[1];
+          const leftCheek = landmarks[234];
+          const rightCheek = landmarks[454];
+          
+          // Using normalized coordinates
+          const distLeft = Math.abs(nose.x - leftCheek.x);
+          const distRight = Math.abs(rightCheek.x - nose.x);
+          
+          if (distRight > 0) {
+            const ratio = distLeft / distRight;
+            if (ratio < 0.6 || ratio > 1.6) {
+               isQualityGood = false;
+               currentWarning = "Góc mặt lệch. Vui lòng nhìn thẳng.";
+            }
           }
+        }
+
+        // 2. Check Brightness (only if angle is good)
+        if (isQualityGood) {
+            const tempC = document.createElement("canvas");
+            tempC.width = 64; tempC.height = 64;
+            const tempCtx = tempC.getContext("2d", { willReadFrequently: true });
+            if (tempCtx) {
+                tempCtx.drawImage(video, 0, 0, 64, 64);
+                const data = tempCtx.getImageData(0, 0, 64, 64).data;
+                let colorSum = 0;
+                for (let i = 0; i < data.length; i += 4) {
+                    colorSum += (data[i] + data[i+1] + data[i+2]) / 3;
+                }
+                const brightness = colorSum / (64 * 64);
+                if (brightness < 40) {
+                    isQualityGood = false;
+                    currentWarning = "Thiếu sáng. Hãy di chuyển ra nơi sáng hơn.";
+                } else if (brightness > 240) {
+                    isQualityGood = false;
+                    currentWarning = "Quá chói. Vui lòng giảm ánh sáng.";
+                }
+            }
+        }
+
+        // Update warning state if changed
+        if (currentWarning !== scanWarningRef.current) {
+           scanWarningRef.current = currentWarning;
+           setScanWarning(currentWarning);
+        }
+
+        // Auto-capture logic
+        if (isQualityGood) {
+          if (detectionStartTimeRef.current === null) {
+            detectionStartTimeRef.current = performance.now();
+          } else if (performance.now() - detectionStartTimeRef.current > 1500) {
+            // If face detected continuously for 1.5s
+            if (status === "idle") {
+              setTimeout(() => {
+                handleCapture();
+              }, 0);
+            }
+          }
+        } else {
+           detectionStartTimeRef.current = null;
         }
 
         const drawingUtils = new DrawingUtils(ctx);
@@ -212,6 +303,10 @@ export default function FaceScanPage() {
       } else {
         // Reset counter if face is lost
         detectionStartTimeRef.current = null;
+        if (scanWarningRef.current !== "Không tìm thấy khuôn mặt.") {
+           scanWarningRef.current = "Không tìm thấy khuôn mặt.";
+           setScanWarning("Không tìm thấy khuôn mặt.");
+        }
       }
       ctx.restore();
     }
@@ -259,6 +354,16 @@ export default function FaceScanPage() {
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCapturedBlob(file);
+    setCapturedUrl(URL.createObjectURL(file));
+    stopCamera();
+    triggerUpload(file);
+    e.target.value = "";
+  };
+
   const getAPIUrls = () => {
     let aiUrl = "https://api.calnovaai.com/ai";
     let saveUrl = "https://api.calnovaai.com/glowlab";
@@ -272,19 +377,75 @@ export default function FaceScanPage() {
     return { aiUrl, saveUrl };
   };
 
+  const normalizeImageBlob = async (inputBlob: Blob): Promise<Blob> => {
+    if (typeof window === "undefined") return inputBlob;
+    return new Promise((resolve) => {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(inputBlob);
+      img.onload = () => {
+        URL.revokeObjectURL(objUrl);
+        const MAX_DIM = 960;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(inputBlob);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (compressed) => resolve(compressed || inputBlob),
+          "image/jpeg",
+          0.82
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objUrl);
+        resolve(inputBlob);
+      };
+      img.src = objUrl;
+    });
+  };
+
   const triggerUpload = async (blob: Blob) => {
     setStatus("uploading");
     setErrorMessage("");
     
     const { aiUrl } = getAPIUrls();
-    const formData = new FormData();
-    formData.append("file", blob, "face_capture.jpg");
+    const normalizedBlob = await normalizeImageBlob(blob);
+    setCapturedBlob(normalizedBlob);
     
     try {
-      const res = await fetch(`${aiUrl}/analyze-face/?engine=gpt&language=vi`, {
-        method: "POST",
-        body: formData,
-      });
+      const buildFormData = () => {
+        const fd = new FormData();
+        fd.append("file", normalizedBlob, "face_capture.jpg");
+        return fd;
+      };
+
+      let res: Response;
+      try {
+        res = await fetch(`${aiUrl}/analyze-face/?engine=gpt&language=vi`, {
+          method: "POST",
+          body: buildFormData(),
+        });
+      } catch (networkErr) {
+        // Retry once with template engine if GPT endpoint timed out or dropped connection
+        res = await fetch(`${aiUrl}/analyze-face/?engine=template&language=vi`, {
+          method: "POST",
+          body: buildFormData(),
+        });
+      }
 
       if (!res.ok) {
         let errorMsg = `Lỗi từ máy chủ AI: ${res.status}`;
@@ -292,7 +453,9 @@ export default function FaceScanPage() {
           const errData = await res.json();
           if (errData && errData.detail) {
             if (typeof errData.detail === "object") {
-              errorMsg = errData.detail.message || errData.detail.suggestion || JSON.stringify(errData.detail);
+              const msg = errData.detail.message || "";
+              const sug = errData.detail.suggestion || "";
+              errorMsg = [msg, sug].filter(Boolean).join(" ") || JSON.stringify(errData.detail);
             } else {
               errorMsg = errData.detail;
             }
@@ -308,12 +471,6 @@ export default function FaceScanPage() {
         result = await res.json();
       } catch (e: any) {
         console.error("JSON parse error, attempting text parse:", e);
-        try {
-          const text = await res.text();
-          console.error("Non-JSON response text:", text.substring(0, 200));
-        } catch (textErr) {
-          // Ignore
-        }
         throw new Error(`Máy chủ AI trả về kết quả không hợp lệ (Mã: ${res.status})`);
       }
       
@@ -324,11 +481,16 @@ export default function FaceScanPage() {
         setAnnotatedImage(result.annotated_image_url);
         setStatus("success");
       } else {
-        throw new Error(result.message || "Không thể phân tích khuôn mặt. Vui lòng chụp chính diện rõ nét.");
+        throw new Error(result?.message || "Không thể phân tích khuôn mặt. Vui lòng chụp chính diện rõ nét.");
       }
     } catch (err: any) {
       console.error("Face Analysis failed:", err);
-      setErrorMessage(err.message || "Lỗi xử lý hình ảnh.");
+      const rawMsg = String(err?.message || "");
+      const friendlyMsg =
+        rawMsg.includes("Failed to fetch") || rawMsg.includes("NetworkError") || rawMsg.includes("Load failed")
+          ? "Không thể kết nối đến máy chủ phân tích AI hoặc ảnh tải lên quá lớn. Vui lòng chọn ảnh rõ mặt (định dạng JPG/PNG) và thử lại."
+          : rawMsg || "Lỗi xử lý hình ảnh.";
+      setErrorMessage(friendlyMsg);
       setStatus("error");
     }
   };
@@ -358,7 +520,21 @@ export default function FaceScanPage() {
         if (typeof resVal === "string") {
           resultText = resVal;
         } else if (typeof resVal === "object") {
-          physiognomyResult = { ...resVal };
+          if (!harmonyScore && resVal.harmony_score) {
+            harmonyScore = resVal.harmony_score;
+          }
+          physiognomyResult = {
+            ...resVal,
+            forehead: resVal.forehead || resVal.parts?.forehead,
+            eyebrows: resVal.eyebrows || resVal.eyebrow || resVal.parts?.eyebrows,
+            eyes: resVal.eyes || resVal.eye || resVal.parts?.eyes,
+            nose: resVal.nose || resVal.parts?.nose,
+            lips: resVal.lips || resVal.mouth || resVal.parts?.lips,
+            jaw: resVal.jaw || resVal.chin || resVal.parts?.jaw,
+            face_shape: resVal.face_shape || resVal.face_shape_analysis,
+            life_phases: resVal.life_phases,
+            key_points: resVal.key_points,
+          };
           if (resVal.parts) {
             physiognomyResult = {
               ...physiognomyResult,
@@ -378,17 +554,20 @@ export default function FaceScanPage() {
       
       // Map GPT structure to standard physiognomyResult structure
       physiognomyResult = {
+        ...gptData,
         forehead: gptData.forehead,
-        eyebrows: gptData.eyebrow,
-        eyes: gptData.eye,
+        eyebrows: gptData.eyebrow || gptData.eyebrows,
+        eyes: gptData.eye || gptData.eyes,
         nose: gptData.nose,
-        lips: gptData.mouth,
-        jaw: gptData.chin,
-        face_shape: gptData.face_shape_analysis
+        lips: gptData.mouth || gptData.lips,
+        jaw: gptData.chin || gptData.jaw,
+        face_shape: gptData.face_shape_analysis || gptData.face_shape,
+        life_phases: gptData.life_phases,
+        key_points: gptData.key_points,
       };
 
       // Try to determine the shape from the text/keys
-      const desc = (gptData.face_shape_analysis?.description || "").toLowerCase();
+      const desc = (gptData.face_shape_analysis?.description || gptData.face_shape_analysis?.shape || "").toLowerCase();
       const shapesMap: Record<string, string> = {
         "tròn": "Round",
         "xoan": "Oval",
@@ -422,7 +601,7 @@ export default function FaceScanPage() {
       probabilities: probabilities,
       harmonyDetails: harmonyDetails,
       metrics: metrics,
-      annotatedImage: apiResult.annotated_image_url || "",
+      annotatedImage: apiResult.annotated_image_url || capturedUrl || "",
       processedAt: new Date().toISOString(),
     };
   };
@@ -440,7 +619,7 @@ export default function FaceScanPage() {
     try {
       const payload = {
         ...analysisData,
-        userId: user?.id?.toString() || "guest",
+        userId: String(user?.id || user?.userId || 1),
       };
 
       const res = await fetch(`${saveUrl}/facial-analysis`, {
@@ -486,12 +665,41 @@ export default function FaceScanPage() {
     }
   };
 
-  const handleShareLink = () => {
+  const handleShareLink = async () => {
     if (!savedId) return;
     const hashed = encodeId(parseInt(savedId.toString(), 10));
-    const shareUrl = `${window.location.origin}/huyen-co/share/face-result?id=${hashed}`;
-    navigator.clipboard.writeText(shareUrl);
-    alert("Đã sao chép liên kết chia sẻ của bạn vào Clipboard!");
+    const refParam = user?.referralCode ? `&ref=${user.referralCode}` : "";
+    const shareUrl = `${window.location.origin}/huyen-co/share/face-result?id=${hashed}${refParam}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // Fallback if clipboard blocked
+    }
+
+    // Trigger share reward & refresh user credits immediately
+    const { saveUrl } = getAPIUrls();
+    let rewardMsg = "Đã sao chép liên kết chia sẻ vào Clipboard!";
+    try {
+      const oldCredits = Number(user?.credits ?? 0);
+      await fetch(`${saveUrl}/facial-analysis/shared/${savedId}`);
+      if (token) {
+        const meRes = await fetch(`${saveUrl}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const meData = await meRes.json();
+        if (meData?.data) {
+          const newCredits = Number(meData.data.credits ?? oldCredits);
+          setUser(meData.data);
+          localStorage.setItem("authUser", JSON.stringify(meData.data));
+          if (newCredits > oldCredits) {
+            rewardMsg = `🎉 Đã sao chép liên kết chia sẻ! Bạn vừa nhận được +${newCredits - oldCredits} Tín Chỉ thưởng chia sẻ!`;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Share reward check error:", e);
+    }
+    alert(rewardMsg);
   };
 
   const handleLoginSuccess = (newToken: string, newUser: any) => {
@@ -528,369 +736,221 @@ export default function FaceScanPage() {
 
   if (status === "success" && analysisData) {
     return (
-      <FaceResultClient
-        analysis={analysisData}
-        isScanningPage={true}
-        saveStatus={saveStatus}
-        onSave={handleSaveResult}
-        onShare={handleShareLink}
-        onReset={() => {
-          setStatus("idle");
-          setSaveStatus("unsaved");
-          setSavedId(null);
-          startCamera();
-        }}
-        token={token}
-      />
+      <>
+        <FaceResultClient
+          analysis={analysisData}
+          isScanningPage={true}
+          saveStatus={saveStatus}
+          onSave={handleSaveResult}
+          onShare={handleShareLink}
+          onReset={() => {
+            setStatus("idle");
+            setSaveStatus("unsaved");
+            setSavedId(null);
+            startCamera();
+          }}
+          token={token}
+        />
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#06030d] text-white font-sans relative flex flex-col justify-between">
-      {/* Background patterns */}
-      <div className="absolute inset-0 bg-[radial-gradient(#ffffff_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
-      <div className="absolute top-[20%] left-[-20%] w-[60%] aspect-square rounded-full bg-purple-900/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[20%] right-[-20%] w-[60%] aspect-square rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#07060B] text-[#EFECE6] font-sans relative flex flex-col justify-between overflow-x-hidden">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
 
-      {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-indigo-500/10 relative z-20 bg-[#06030d]/80 backdrop-blur-md">
-        <Link href="/huyen-co" className="flex items-center gap-2 hover:text-[#d4af37] transition-all">
-          <span className="text-xl">←</span>
-          <span className="text-xs uppercase font-black tracking-widest">Trang chủ</span>
-        </Link>
-        <h1 className="text-sm font-black tracking-widest text-[#d4af37] uppercase font-serif">
-          AI Face Profiler • Xem Tướng Mặt
-        </h1>
-        <div className="w-12" />
-      </header>
+      {/* Subtle Oriental Celestial Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[65vw] h-[45vw] bg-[#D4AF37]/[0.05] rounded-full blur-[140px]" />
+        <div className="absolute inset-0 opacity-[0.1] bg-[radial-gradient(#D4AF37_0.75px,transparent_0.75px)] [background-size:48px_48px]" />
+      </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
+      {/* Unified Header */}
+      <HuyenCoHeader
+        user={user}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        subtitle="Pháp Môn Diện Tướng Học & Ngũ Quan AI"
+      />
+
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative z-10">
         {status === "idle" && (
-          <div className="w-full max-w-md flex flex-col items-center gap-6">
-            <div className="w-full aspect-[4/5] rounded-3xl overflow-hidden border border-indigo-500/30 relative bg-black shadow-2xl flex items-center justify-center">
+          <div className="w-full max-w-md flex flex-col items-center gap-5">
+            {/* Concise Guidance Header */}
+            <div className="text-center space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#120F1D] border border-[#D4AF37]/25 text-[10px] font-bold uppercase tracking-[0.2em] text-[#E8C96A]">
+                <SparkleIcon size={12} />
+                <span>Tam Đình • Ngũ Quan • Lưu Niên</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+                Soi Chiếu Diện Tướng
+              </h1>
+              <p className="text-xs text-[#C5B386] max-w-xs mx-auto">
+                Đặt khuôn mặt chính diện trong khung ngắm hoặc tải lên một bức ảnh chân dung rõ nét.
+              </p>
+            </div>
+
+            <div className="w-full aspect-[4/5] rounded-3xl overflow-hidden border border-[#D4AF37]/35 relative bg-[#0B0912] shadow-[0_20px_50px_rgba(0,0,0,0.75)] flex items-center justify-center">
               {cameraError ? (
-                <div className="text-center p-6 space-y-4">
-                  <span className="text-4xl block">⚠️</span>
-                  <p className="text-xs text-slate-300">{cameraError}</p>
-                  <button onClick={startCamera} className="px-4 py-2 bg-indigo-600 rounded-full text-xs font-bold uppercase tracking-wider">
-                    Thử lại
-                  </button>
+                <div className="text-center p-7 space-y-4">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#120F1D] border border-[#D4AF37]/30 mx-auto">
+                    <FacePhysiognomyIcon size={40} />
+                  </div>
+                  <p className="text-xs text-[#C5B386] leading-relaxed">{cameraError}</p>
+                  <div className="flex flex-wrap justify-center gap-2.5 pt-1">
+                    <button
+                      onClick={startCamera}
+                      className="px-4 py-2.5 bg-[#120F1D] hover:bg-white/10 border border-[#D4AF37]/30 rounded-full text-xs font-bold text-[#E8C96A] uppercase tracking-wider cursor-pointer"
+                    >
+                      Bật Lại Camera
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-5 py-2.5 hc-gold-btn rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <UploadImageIcon size={15} />
+                      <span>Tải Ảnh Từ Máy</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
-                  <video ref={videoRef} className={`w-full h-full object-cover ${isMirrored ? "scale-x-[-1]" : ""}`} playsInline muted />
-                  
-                  <canvas ref={canvasRef} className={`absolute top-0 left-0 w-full h-full object-cover pointer-events-none ${isMirrored ? "scale-x-[-1]" : ""}`} />
-                  
+                  <video
+                    ref={videoRef}
+                    className={`w-full h-full object-cover ${isMirrored ? "scale-x-[-1]" : ""}`}
+                    playsInline
+                    muted
+                  />
+
+                  <canvas
+                    ref={canvasRef}
+                    className={`absolute top-0 left-0 w-full h-full object-cover pointer-events-none ${
+                      isMirrored ? "scale-x-[-1]" : ""
+                    }`}
+                  />
+
                   {/* Face Scanner Guide Overlay */}
-                  <div className="absolute inset-0 m-6 border-2 border-dashed border-[#d4af37]/30 rounded-[50%/40%] flex items-center justify-center pointer-events-none animate-pulse">
-                    <span className="text-[10px] text-[#d4af37] font-bold tracking-widest bg-black/60 px-3 py-1 rounded-full uppercase">
-                      Đặt khuôn mặt thẳng hàng
+                  <div
+                    className={`absolute inset-0 m-6 border-2 border-dashed ${
+                      scanWarning ? "border-red-500/60" : "border-[#D4AF37]/45"
+                    } rounded-[50%/40%] flex items-end justify-center pb-5 pointer-events-none transition-colors`}
+                  >
+                    <span
+                      className={`text-[10px] font-bold tracking-widest bg-[#07060B]/80 border px-3.5 py-1.5 rounded-full uppercase backdrop-blur-md ${
+                        scanWarning
+                          ? "text-red-300 border-red-500/40"
+                          : "text-[#FFF3C4] border-[#D4AF37]/35"
+                      }`}
+                    >
+                      {scanWarning || "Giữ khuôn mặt chính diện & đủ sáng"}
                     </span>
                   </div>
                 </>
               )}
             </div>
 
-            <button
-              onClick={handleCapture}
-              disabled={!cameraActive}
-              className="w-20 h-20 rounded-full border-4 border-white bg-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 cursor-pointer shadow-lg shadow-white/10 animate-pulse"
-            >
-              <div className="w-16 h-16 rounded-full bg-white hover:bg-slate-200 transition-colors" />
-            </button>
+            <div className="flex items-center gap-4 w-full justify-center">
+              <button
+                onClick={handleCapture}
+                disabled={!cameraActive}
+                title="Chụp ảnh khuôn mặt"
+                className="w-18 h-18 rounded-full border-2 border-[#D4AF37] bg-[#D4AF37]/15 flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer shadow-[0_0_25px_rgba(212,175,55,0.25)]"
+              >
+                <div className="w-14 h-14 rounded-full hc-gold-btn flex items-center justify-center text-[10px] font-black uppercase tracking-wider">
+                  Chụp
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-5 py-3.5 rounded-2xl hc-card hover:border-[#D4AF37]/60 text-xs font-bold text-[#FFF3C4] uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2"
+              >
+                <UploadImageIcon size={16} className="text-[#D4AF37]" />
+                <span>Tải Ảnh Chân Dung</span>
+              </button>
+            </div>
           </div>
         )}
 
         {(status === "capturing" || status === "uploading") && (
-          <div className="w-full max-w-md flex flex-col items-center gap-6">
-            <style>{`
-              @keyframes scan-line-movement {
-                0% { top: 0%; opacity: 0.3; }
-                10% { opacity: 1; }
-                90% { opacity: 1; }
-                100% { top: 100%; opacity: 0.3; }
-              }
-              .animate-scan-line {
-                position: absolute;
-                left: 0;
-                right: 0;
-                height: 3px;
-                background: linear-gradient(90deg, transparent, #d4af37, transparent);
-                box-shadow: 0 0 15px #d4af37, 0 0 5px #d4af37;
-                animation: scan-line-movement 3s linear infinite;
-                z-index: 10;
-              }
-            `}</style>
-            
-            <div className="w-full aspect-[4/5] rounded-3xl overflow-hidden border border-[#d4af37]/30 relative bg-black shadow-2xl flex items-center justify-center">
-              {capturedUrl && (
-                <img 
-                  src={capturedUrl} 
-                  alt="Preview" 
-                  className={`w-full h-full object-cover rounded-3xl ${isMirrored ? "scale-x-[-1]" : ""} blur-sm opacity-80`}
-                />
-              )}
-              <div className="absolute inset-0 bg-black/40" />
-              
-              {/* Scan Line */}
-              <div className="animate-scan-line" />
-              
-              {/* Scanner Guide Overlay */}
-              <div className="absolute inset-0 m-6 border-2 border-dashed border-[#d4af37]/20 rounded-[50%/40%] flex items-center justify-center pointer-events-none">
-                <span className="text-[10px] text-[#d4af37]/60 font-bold tracking-widest bg-black/40 px-3 py-1 rounded-full uppercase">
-                  AI SCANNING...
-                </span>
-              </div>
-            </div>
-
-            <div className="text-center space-y-3 px-4">
-              <div className="w-10 h-10 rounded-full border-2 border-t-[#d4af37] border-indigo-500/10 animate-spin mx-auto flex items-center justify-center">
-                <span className="text-xs">🔮</span>
-              </div>
-              <h3 className="text-md font-black tracking-widest text-[#d4af37] uppercase font-serif">
-                Đang phân tích nhân tướng mặt...
-              </h3>
-              <p className="text-xs text-slate-300 min-h-[40px] leading-relaxed transition-all duration-500">
-                {currentLoadingMessage}
-              </p>
-            </div>
-          </div>
+          <ScanWaitingOverlay
+            mode="face"
+            capturedUrl={capturedUrl}
+            isMirrored={isMirrored}
+          />
         )}
 
         {status === "error" && (
-          <div className="w-full max-w-md bg-[#120a26] border border-[#d4af37]/40 rounded-3xl p-8 text-center space-y-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(212,175,55,0.03))] pointer-events-none" />
-            
-            <div className="w-16 h-16 bg-[#d4af37]/10 rounded-full flex items-center justify-center mx-auto border border-[#d4af37]/20">
-              <span className="text-3xl">🔮</span>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-md font-bold text-[#d4af37] uppercase tracking-widest font-serif">
-                Chưa Nhận Diện Rõ Nét
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
-                Mô hình AI cần ảnh chụp rõ các đường nét trên khuôn mặt để lập bản đồ nhân trắc học chính xác nhất.
-              </p>
+          <div className="w-full max-w-md hc-card rounded-3xl p-7 sm:p-8 text-center space-y-6 relative overflow-hidden">
+            <div className="w-16 h-16 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center mx-auto border border-[#D4AF37]/30">
+              <FacePhysiognomyIcon size={42} />
             </div>
 
-            <div className="bg-[#0b0517] border border-indigo-500/10 rounded-2xl p-4 text-left space-y-3">
-              <h4 className="text-[10px] font-black text-indigo-300 uppercase tracking-widest border-b border-indigo-500/10 pb-1.5">
-                💡 Bí quyết quét thành công:
+            <div className="space-y-2">
+              <h3 className="text-xl font-serif font-bold text-[#FFF3C4] uppercase tracking-wider">
+                Chưa Nhận Diện Rõ Ngũ Quan
+              </h3>
+              {errorMessage ? (
+                <div className="bg-amber-950/40 border border-[#D4AF37]/35 rounded-xl p-3.5 text-xs text-[#FFF3C4] leading-relaxed">
+                  {errorMessage}
+                </div>
+              ) : (
+                <p className="text-xs text-[#C5B386] leading-relaxed max-w-xs mx-auto">
+                  Hệ thống cần ảnh chụp rõ nét các bộ vị trên khuôn mặt để lập bản đồ nhân tướng chính xác nhất.
+                </p>
+              )}
+            </div>
+
+            <div className="bg-[#0B0912]/90 border border-[#D4AF37]/15 rounded-2xl p-4 text-left space-y-2.5">
+              <h4 className="text-[10px] font-bold text-[#E8C96A] uppercase tracking-widest border-b border-[#D4AF37]/15 pb-1.5">
+                Chỉ dẫn chụp ảnh chuẩn diện tướng:
               </h4>
-              <ul className="text-[11px] text-slate-300 space-y-2 list-none pl-0">
+              <ul className="text-xs text-[#C5B386] space-y-2 list-none pl-0">
                 <li className="flex items-start gap-2">
-                  <span className="text-[#d4af37] mt-0.5">✦</span>
-                  <span><strong>Đủ ánh sáng:</strong> Hãy đứng gần cửa sổ hoặc dưới ánh đèn sáng rõ. Tránh chụp ngược sáng.</span>
+                  <span className="text-[#D4AF37] mt-0.5">✦</span>
+                  <span>
+                    <strong className="text-[#EFECE6]">Ánh sáng hài hòa:</strong> Chụp nơi đủ sáng, tránh ngược sáng làm tối vùng Ấn Đường và Sơn Căn.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-[#d4af37] mt-0.5">✦</span>
-                  <span><strong>Giữ vững camera:</strong> Giữ điện thoại cố định trong 1-2 giây khi bấm nút để tránh nhòe nét.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d4af37] mt-0.5">✦</span>
-                  <span><strong>Căn chỉnh chính xác:</strong> Đặt khuôn mặt nằm trọn trong hình bầu dục gợi ý trên màn hình.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d4af37] mt-0.5">✦</span>
-                  <span><strong>Lau sạch ống kính:</strong> Đôi khi mồ hôi hoặc bụi bẩn bám trên camera trước làm ảnh bị mờ.</span>
+                  <span className="text-[#D4AF37] mt-0.5">✦</span>
+                  <span>
+                    <strong className="text-[#EFECE6]">Góc mặt chính diện:</strong> Nhìn thẳng vào ống kính, không đeo kính râm hoặc che khuất vầng trán.
+                  </span>
                 </li>
               </ul>
             </div>
 
-            <button
-              onClick={() => {
-                setStatus("idle");
-                startCamera();
-              }}
-              className="w-full py-3 bg-gradient-to-r from-amber-800 to-amber-950 hover:from-amber-900 hover:to-amber-950 text-white font-bold text-xs tracking-widest uppercase rounded-xl shadow-lg transition-all border border-amber-700/30 cursor-pointer"
-            >
-              Thử quét lại ngay
-            </button>
-          </div>
-        )}
-
-        {status === "success" && analysisData && (
-          <div className="w-full max-w-4xl bg-[#120a26]/90 border border-[#d4af37]/30 rounded-3xl overflow-hidden shadow-2xl flex flex-col lg:grid lg:grid-cols-2">
-            
-            {/* Column 1: Captured Image Preview with Coordinates */}
-            <div className="relative aspect-[4/5] bg-black lg:h-full flex items-center justify-center overflow-hidden">
-              <img
-                src={annotatedImage || capturedUrl || ""}
-                alt="Face Coordinates Map"
-                className="w-full h-full object-contain"
-              />
-              <div className="absolute bottom-4 left-4 right-4 bg-black/75 border border-[#d4af37]/20 p-3 rounded-xl backdrop-blur">
-                <span className="text-[10px] text-[#d4af37] uppercase tracking-widest block font-bold">
-                  Bản đồ tỷ lệ vàng ngũ quan
-                </span>
-                <p className="text-[9px] text-slate-400 mt-0.5">
-                  Hình ảnh kết quả trích xuất tọa độ nhân trung, ấn đường và chân mày.
-                </p>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <button
+                onClick={() => {
+                  setStatus("idle");
+                  startCamera();
+                }}
+                className="flex-1 py-3 hc-gold-btn font-bold text-xs tracking-widest uppercase rounded-xl cursor-pointer"
+              >
+                Quét Lại Camera
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 py-3 bg-[#0B0912] hover:bg-white/10 text-[#E8C96A] font-bold text-xs tracking-widest uppercase rounded-xl border border-[#D4AF37]/30 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <UploadImageIcon size={15} />
+                <span>Tải Ảnh Khác</span>
+              </button>
             </div>
-
-            {/* Column 2: Mystical Readings Scrollable */}
-            <div className="p-6 flex flex-col justify-between max-h-[80vh] overflow-y-auto border-t lg:border-t-0 lg:border-l border-indigo-500/10">
-              <div className="space-y-6">
-                <div>
-                  <span className="text-[10px] text-[#22d3ee] font-bold uppercase tracking-widest block mb-1">
-                    Cát quả nhân tướng
-                  </span>
-                  <h3 className="text-xl font-black uppercase text-[#d4af37] font-serif tracking-wider">
-                    Luận giải chi tiết AI
-                  </h3>
-                </div>
-
-                {/* Aspect Selector Tabs */}
-                <div className="flex border-b border-indigo-500/10 pb-3 gap-2">
-                  <button
-                    onClick={() => setActiveTab("shape")}
-                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-lg cursor-pointer text-center ${
-                      activeTab === "shape" ? "bg-[#d4af37] text-black" : "bg-[#0d071a] text-slate-400"
-                    }`}
-                  >
-                    Dạng mặt
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("features")}
-                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-lg cursor-pointer text-center ${
-                      activeTab === "features" ? "bg-[#d4af37] text-black" : "bg-[#0d071a] text-slate-400"
-                    }`}
-                  >
-                    Chi tiết Ngũ quan
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("destiny")}
-                    className={`flex-1 py-2 text-[10px] font-black uppercase tracking-wider transition-all rounded-lg cursor-pointer text-center ${
-                      activeTab === "destiny" ? "bg-[#d4af37] text-black" : "bg-[#0d071a] text-slate-400"
-                    }`}
-                  >
-                    Vận trình
-                  </button>
-                </div>
-
-                {/* Content based on Tab */}
-                {activeTab === "shape" && (
-                  <div className="space-y-4">
-                    <div className="bg-[#0b0517] border border-indigo-500/10 rounded-2xl p-4 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider">Hình dạng khuôn mặt:</span>
-                        <span className="text-xs text-[#d4af37] font-black uppercase tracking-wider">
-                          {translateShape(analysisData.faceShape)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center border-t border-indigo-500/10 pt-2">
-                        <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider">Điểm hài hòa (Harmony Score):</span>
-                        <span className="text-xs text-[#d4af37] font-black uppercase tracking-wider">
-                          {analysisData.harmonyScore} / 100
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="border border-indigo-500/10 bg-[#0d071c] rounded-2xl p-4">
-                      <h4 className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1.5">
-                        Luận giải diện tướng
-                      </h4>
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                        {getPhysiognomyValue("face_shape") || "Khuôn mặt cân đối thể hiện một bản mệnh hanh thông, nội tâm vững vàng và có khả năng giao thiệp tốt trong cuộc sống xã hội."}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "features" && (
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-bold text-[#d4af37] uppercase">Nhận xét các cung trên mặt:</h4>
-                    <div className="space-y-3">
-                      {["forehead", "eyes", "nose", "lips", "eyebrows", "jaw"].map((feature) => {
-                        const meaning = getPhysiognomyValue(feature);
-                        if (!meaning) return null;
-                        
-                        const featureLabels: Record<string, string> = {
-                          forehead: "Forehead (Trán / Cung Quan Lộc)",
-                          eyes: "Eyes (Mắt / Cung Điền Trạch)",
-                          nose: "Nose (Mũi / Cung Tài Bạch)",
-                          lips: "Lips (Môi / Cung Nô Bộc)",
-                          eyebrows: "Eyebrows (Chân mày / Huynh Đệ)",
-                          jaw: "Jaw (Cằm / Cung Địa Các)"
-                        };
-
-                        return (
-                          <div key={feature} className="border border-indigo-500/10 bg-[#0d071c]/50 rounded-xl p-3">
-                            <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider block mb-1">
-                              {featureLabels[feature] || feature}
-                            </span>
-                            <p className="text-xs text-slate-300 leading-relaxed">{meaning}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "destiny" && (
-                  <div className="space-y-4">
-                    <div className="border border-indigo-500/10 bg-[#0d071c] rounded-2xl p-4">
-                      <h4 className="text-[10px] font-black text-indigo-300 uppercase tracking-widest mb-1.5">
-                        Tổng hợp vận trình & Khuyên cáo
-                      </h4>
-                      <p className="text-xs text-slate-200 leading-relaxed font-serif italic">
-                        {analysisData.resultText}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons: Save & Share */}
-              <div className="mt-8 pt-4 border-t border-indigo-500/10 flex flex-col gap-2">
-                {saveStatus === "unsaved" && (
-                  <button
-                    onClick={handleSaveResult}
-                    className="w-full py-2.5 bg-gradient-to-r from-[#d4af37] to-yellow-500 hover:from-yellow-400 hover:to-yellow-500 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-[#d4af37]/10 cursor-pointer"
-                  >
-                    {token ? "Lưu kết quả" : "Đăng nhập để lưu kết quả"}
-                  </button>
-                )}
-                {saveStatus === "saving" && (
-                  <button disabled className="w-full py-2.5 bg-indigo-950 text-slate-400 text-xs font-black uppercase tracking-widest rounded-xl cursor-wait">
-                    Đang lưu trữ...
-                  </button>
-                )}
-                {saveStatus === "saved" && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleShareLink}
-                      className="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-cyan-600/10 cursor-pointer"
-                    >
-                      Chia sẻ kết quả 🔗
-                    </button>
-                    <button
-                      onClick={() => {
-                        setStatus("idle");
-                        setSaveStatus("unsaved");
-                        setSavedId(null);
-                        startCamera();
-                      }}
-                      className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl transition-all"
-                    >
-                      Quét mới
-                    </button>
-                  </div>
-                )}
-                {saveStatus === "error" && (
-                  <button
-                    onClick={handleSaveResult}
-                    className="w-full py-2.5 bg-red-950 border border-red-500 text-red-300 font-black text-xs uppercase tracking-widest rounded-xl cursor-pointer"
-                  >
-                    Thử lưu lại (Gặp lỗi)
-                  </button>
-                )}
-              </div>
-            </div>
-
           </div>
         )}
       </main>
@@ -903,8 +963,8 @@ export default function FaceScanPage() {
       />
 
       {/* Footer info */}
-      <footer className="px-6 py-4 border-t border-indigo-500/10 text-center text-[10px] text-slate-600">
-        <p>Huyền Cơ AI • Sử dụng mô hình YOLOv11 & Landmark Pose Estimation.</p>
+      <footer className="px-6 py-4 border-t border-[#D4AF37]/15 text-center text-[11px] text-[#C5B386]/70 relative z-10">
+        <p>Huyền Cơ Các • Tinh Hoa Diện Tướng Học Đông Phương & Sinh Trắc Học AI</p>
       </footer>
     </div>
   );

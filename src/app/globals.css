@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #07060B;
+  --foreground: #EFECE6;
+  --hc-bg: #07060B;
+  --hc-bg-elevated: #0E0C16;
+  --hc-card: #120F1D;
+  --hc-gold: #D4AF37;
+  --hc-gold-light: #E8C96A;
+  --hc-champagne: #C5B386;
+  --hc-cinnabar: #B93829;
+  --hc-jade: #34D399;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-be-vietnam), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-cormorant), Georgia, serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
+  background-color: #07060B;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-be-vietnam), system-ui, -apple-system, sans-serif;
+  overscroll-behavior-y: none;
+  scroll-behavior: smooth;
+}
+
+/* Oriental Celestial Luxury Utility Classes */
+.hc-card {
+  background: linear-gradient(165deg, rgba(22, 18, 36, 0.85) 0%, rgba(11, 9, 18, 0.92) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(232, 201, 106, 0.08);
+}
+
+.hc-card-hover {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hc-card-hover:hover {
+  border-color: rgba(212, 175, 55, 0.48);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 35px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(232, 201, 106, 0.2);
+  transform: translateY(-3px);
+}
+
+.hc-gold-gradient-text {
+  background: linear-gradient(135deg, #FFF6D6 0%, #E5C158 45%, #C59B27 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hc-gold-btn {
+  background: linear-gradient(135deg, #E2BE53 0%, #C59B27 100%);
+  color: #09070F;
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.25s ease;
+}
+
+.hc-gold-btn:hover {
+  background: linear-gradient(135deg, #EDD071 0%, #D4AF37 100%);
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Subtle custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #07060B;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.45);
 }

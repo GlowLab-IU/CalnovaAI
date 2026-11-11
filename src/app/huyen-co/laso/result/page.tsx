@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import HuyenCoHeader from "../../components/HuyenCoHeader";
 
 interface StarInfo {
   star_id: number;
@@ -205,14 +206,7 @@ function ChartResultContent() {
   const [isChatStarting, setIsChatStarting] = useState(false);
 
   const getTuviBase = () => {
-    let baseUrl = "https://api.calnovaai.com/tuvi";
-    if (typeof window !== "undefined") {
-      const hostname = window.location.hostname;
-      if (hostname.includes("calnovaai.com")) {
-        baseUrl = "https://api.calnovaai.com/tuvi";
-      }
-    }
-    return baseUrl;
+    return "https://api.calnovaai.com/glowlab/tuvi";
   };
 
   const getChatBase = () => {
@@ -271,7 +265,7 @@ function ChartResultContent() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ user_id: uid, chart_id: c.id }),
+        body: JSON.stringify({ user_id: uid, chart_id: c.id, language: "vi" }),
       });
       const data = await res.json();
       if (res.ok && data.success && data.conversation_id) {
@@ -302,7 +296,7 @@ function ChartResultContent() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ user_id: uid, chart_id: chart.id }),
+        body: JSON.stringify({ user_id: uid, chart_id: chart.id, language: "vi" }),
       });
       const data = await res.json();
       if (res.ok && data.success && data.conversation_id) {
@@ -355,12 +349,13 @@ function ChartResultContent() {
   const extra = chart.chartData.extra || {};
 
   return (
-    <div className="min-h-screen bg-[#070512] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/20 via-[#070512] to-[#020108] text-slate-300 p-4 sm:p-6 pb-20 select-none">
-      
+    <div className="min-h-screen bg-[#070512] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/20 via-[#070512] to-[#020108] text-slate-300 pb-20 select-none">
+      <HuyenCoHeader subtitle="Tinh Bàn Tử Vi Đẩu Số 12 Cung" />
+
       {/* Background stars styling */}
       <div className="absolute inset-0 bg-[url(https://www.transparenttextures.com/patterns/dark-matter.png)] opacity-40 pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto space-y-6 relative z-10">
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 relative z-10">
         
         {/* Navigation / Header */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-900 pb-4">
@@ -445,11 +440,11 @@ function ChartResultContent() {
                     </div>
 
                     {/* Cell Header */}
-                    <div className="flex justify-between items-center border-b border-slate-800/80 pb-1 mb-1.5 w-full mt-2 select-none">
-                      <span className={`text-[11px] sm:text-xs md:text-[13px] font-black uppercase tracking-wider ${isMenh ? "text-[#d4af37]" : isThan ? "text-blue-400" : "text-slate-200"}`}>
-                        {house.name} {isThan && <span className="text-[9px] text-blue-400 font-bold">(Thân)</span>}
+                    <div className="flex justify-between items-center border-b border-slate-700/80 pb-1.5 mb-1.5 w-full mt-2 select-none">
+                      <span className={`text-xs sm:text-[13px] md:text-sm font-black uppercase tracking-wider ${isMenh ? "text-[#fde047]" : isThan ? "text-blue-300" : "text-white"}`}>
+                        {house.name} {isThan && <span className="text-[10px] text-blue-300 font-bold">(Thân)</span>}
                       </span>
-                      <span className="text-[9px] sm:text-[10px] md:text-xs text-slate-500 font-black uppercase">{cell.branch}</span>
+                      <span className="text-[10px] sm:text-xs text-slate-300 font-black uppercase">{cell.branch}</span>
                     </div>
 
                     {/* Main Stars Column */}
@@ -459,25 +454,25 @@ function ChartResultContent() {
                           <div
                             key={idx}
                             style={{ color: getElementColor(s.element) }}
-                            className="text-xs sm:text-[13px] md:text-[14px] font-black text-center truncate leading-tight w-full"
+                            className="text-[13px] sm:text-sm md:text-[15px] font-black text-center truncate leading-tight w-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
                           >
-                            {capitalizeWords(s.name)} {s.strength && <span className="text-[9px] sm:text-[10px] opacity-75 font-normal">({s.strength})</span>}
+                            {capitalizeWords(s.name)} {s.strength && <span className="text-[10px] sm:text-[11px] opacity-90 font-semibold">({s.strength})</span>}
                           </div>
                         ))
                       ) : (
-                        <div className="text-[10px] sm:text-xs text-slate-600 italic text-center py-1 select-none">Vô Chính Diệu</div>
+                        <div className="text-xs text-slate-400 italic text-center py-1 select-none font-medium">Vô Chính Diệu</div>
                       )}
                     </div>
 
                     {/* Minor Stars double columns */}
-                    <div className="w-full flex justify-between gap-1 my-1 text-[9px] sm:text-[10px] md:text-[10.5px] leading-tight select-none overflow-hidden h-[45px] sm:h-[55px] md:h-[65px]">
+                    <div className="w-full flex justify-between gap-1.5 my-1 text-[10.5px] sm:text-[11.5px] md:text-xs leading-snug select-none overflow-hidden min-h-[54px] sm:min-h-[64px] md:min-h-[72px]">
                       {/* Left Column (Good Stars) */}
                       <div className="w-[48%] flex flex-col items-start gap-0.5">
                         {leftStars.map((s, idx) => (
                           <span
                             key={idx}
                             style={{ color: getElementColor(s.element) }}
-                            className="truncate max-w-[55px] sm:max-w-[70px] text-left opacity-90 font-medium"
+                            className="truncate max-w-[72px] sm:max-w-[92px] text-left font-semibold"
                           >
                             {capitalizeWords(s.name)}
                           </span>
@@ -489,7 +484,7 @@ function ChartResultContent() {
                           <span
                             key={idx}
                             style={{ color: getElementColor(s.element) }}
-                            className="truncate max-w-[55px] sm:max-w-[70px] text-right opacity-85 font-medium"
+                            className="truncate max-w-[72px] sm:max-w-[92px] text-right font-semibold"
                           >
                             {capitalizeWords(s.name)}
                           </span>
@@ -498,9 +493,9 @@ function ChartResultContent() {
                     </div>
 
                     {/* Cell Footer */}
-                    <div className="flex justify-between items-center border-t border-slate-800/60 pt-1 w-full mt-auto select-none">
-                      <span className="text-[9px] sm:text-[10.5px] md:text-xs text-red-400 font-black">{house.major_period || ""}</span>
-                      <span className="text-[8px] sm:text-[9px] text-slate-500 font-extrabold uppercase">{house.element}</span>
+                    <div className="flex justify-between items-center border-t border-slate-700/70 pt-1 w-full mt-auto select-none">
+                      <span className="text-[10px] sm:text-xs text-rose-400 font-black">{house.major_period || ""}</span>
+                      <span className="text-[10px] sm:text-[11px] text-slate-300 font-extrabold uppercase">{house.element}</span>
                     </div>
 
                     {/* Zoom overlay symbol */}
@@ -542,58 +537,58 @@ function ChartResultContent() {
                   </div>
 
                   {/* Birth Details Box (Modern glassmorphic container) */}
-                  <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 text-[10px] sm:text-xs space-y-1 my-0.5">
-                    <div className="text-slate-400 flex justify-between px-1">
+                  <div className="bg-slate-950/80 border border-slate-700/80 rounded-xl p-3 text-xs sm:text-[13px] space-y-1.5 my-0.5">
+                    <div className="text-slate-300 flex justify-between px-1">
                       <span>Dương lịch:</span>
-                      <span className="font-bold text-slate-200">{extra.solar_date || "--"}</span>
+                      <span className="font-bold text-white">{extra.solar_date || "--"}</span>
                     </div>
-                    <div className="text-slate-400 flex justify-between px-1">
+                    <div className="text-slate-300 flex justify-between px-1">
                       <span>Âm lịch:</span>
-                      <span className="font-bold text-[#d4af37]">{extra.lunar_date || "--"}</span>
+                      <span className="font-bold text-[#fde047]">{extra.lunar_date || "--"}</span>
                     </div>
-                    <div className="text-slate-400 flex justify-between px-1">
+                    <div className="text-slate-300 flex justify-between px-1">
                       <span>Giờ sinh:</span>
-                      <span className="font-bold text-slate-200">{extra.hour || "--"}</span>
+                      <span className="font-bold text-white">{extra.hour || "--"}</span>
                     </div>
                   </div>
 
                   {/* Can Chi row badges */}
-                  <div className="grid grid-cols-4 gap-1 py-1 px-1 border-t border-b border-slate-850 my-0.5">
+                  <div className="grid grid-cols-4 gap-1 py-1.5 px-1 border-t border-b border-slate-800 my-0.5">
                     <div className="text-center">
-                      <span className="text-slate-500 text-[8px] uppercase block">Năm</span>
-                      <span className="font-extrabold text-slate-200 text-[10px] sm:text-[11px] block">{extra.stem_branch?.year || "--"}</span>
+                      <span className="text-slate-400 text-[9.5px] uppercase font-bold block">Năm</span>
+                      <span className="font-extrabold text-white text-xs sm:text-[13px] block">{extra.stem_branch?.year || "--"}</span>
                     </div>
                     <div className="text-center">
-                      <span className="text-slate-500 text-[8px] uppercase block">Tháng</span>
-                      <span className="font-extrabold text-slate-200 text-[10px] sm:text-[11px] block">{extra.stem_branch?.month || "--"}</span>
+                      <span className="text-slate-400 text-[9.5px] uppercase font-bold block">Tháng</span>
+                      <span className="font-extrabold text-white text-xs sm:text-[13px] block">{extra.stem_branch?.month || "--"}</span>
                     </div>
                     <div className="text-center">
-                      <span className="text-slate-500 text-[8px] uppercase block">Ngày</span>
-                      <span className="font-extrabold text-slate-200 text-[10px] sm:text-[11px] block">{extra.stem_branch?.day || "--"}</span>
+                      <span className="text-slate-400 text-[9.5px] uppercase font-bold block">Ngày</span>
+                      <span className="font-extrabold text-white text-xs sm:text-[13px] block">{extra.stem_branch?.day || "--"}</span>
                     </div>
                     <div className="text-center">
-                      <span className="text-slate-500 text-[8px] uppercase block">Giờ</span>
-                      <span className="font-extrabold text-[#fde047] text-[10px] sm:text-[11px] block">{extra.stem_branch?.hour || "--"}</span>
+                      <span className="text-slate-400 text-[9.5px] uppercase font-bold block">Giờ</span>
+                      <span className="font-extrabold text-[#fde047] text-xs sm:text-[13px] block">{extra.stem_branch?.hour || "--"}</span>
                     </div>
                   </div>
 
                   {/* Core energy ratings */}
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-[10px] sm:text-xs pt-1">
-                    <div className="bg-[#10b981]/5 border border-[#10b981]/15 rounded-lg py-1 px-1.5">
-                      <span className="text-slate-500 uppercase block text-[8px] tracking-wider mb-0.5">Mệnh</span>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs sm:text-[13px] pt-1">
+                    <div className="bg-[#10b981]/10 border border-[#10b981]/30 rounded-lg py-1.5 px-2">
+                      <span className="text-slate-300 uppercase font-bold block text-[9.5px] tracking-wider mb-0.5">Mệnh</span>
                       <span className="font-extrabold text-[#34d399] block truncate">{extra.menh || "--"}</span>
                     </div>
-                    <div className="bg-[#3b82f6]/5 border border-[#3b82f6]/15 rounded-lg py-1 px-1.5">
-                      <span className="text-slate-500 uppercase block text-[8px] tracking-wider mb-0.5">Cục</span>
+                    <div className="bg-[#3b82f6]/10 border border-[#3b82f6]/30 rounded-lg py-1.5 px-2">
+                      <span className="text-slate-300 uppercase font-bold block text-[9.5px] tracking-wider mb-0.5">Cục</span>
                       <span className="font-extrabold text-[#60a5fa] block truncate">{extra.cuc || "--"}</span>
                     </div>
-                    <div className="border-t border-slate-850/60 pt-1 text-left pl-1">
-                      <span className="text-slate-500 uppercase block text-[8px]">Mệnh Chủ</span>
-                      <span className="font-bold text-slate-300 block truncate">{extra.menh_chu || "--"}</span>
+                    <div className="border-t border-slate-800 pt-1 text-left pl-1">
+                      <span className="text-slate-400 uppercase font-bold block text-[9.5px]">Mệnh Chủ</span>
+                      <span className="font-bold text-slate-100 block truncate">{extra.menh_chu || "--"}</span>
                     </div>
-                    <div className="border-t border-slate-850/60 pt-1 text-right pr-1">
-                      <span className="text-slate-500 uppercase block text-[8px]">Thân Chủ</span>
-                      <span className="font-bold text-slate-300 block truncate">{extra.than_chu || "--"}</span>
+                    <div className="border-t border-slate-800 pt-1 text-right pr-1">
+                      <span className="text-slate-400 uppercase font-bold block text-[9.5px]">Thân Chủ</span>
+                      <span className="font-bold text-slate-100 block truncate">{extra.than_chu || "--"}</span>
                     </div>
                   </div>
 

@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AuthModal from "../AuthModal";
 import PalmResultClient from "../share/palm-result/PalmResultClient";
+import HuyenCoHeader from "../components/HuyenCoHeader";
+import ScanWaitingOverlay from "../components/ScanWaitingOverlay";
+import {
+  PalmReadingIcon,
+  UploadImageIcon,
+  SparkleIcon,
+} from "../components/HuyenCoIcons";
 import { encodeId } from "@/utils/hashId";
 import { HandLandmarker, FilesetResolver, DrawingUtils } from "@mediapipe/tasks-vision";
 
@@ -22,6 +29,7 @@ export default function PalmScanPage() {
   const [isMirrored, setIsMirrored] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // MediaPipe
   const handLandmarkerRef = useRef<HandLandmarker | null>(null);
@@ -33,6 +41,8 @@ export default function PalmScanPage() {
   const [cameraError, setCameraError] = useState("");
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
+  const [scanWarning, setScanWarning] = useState<string>("");
+  const scanWarningRef = useRef<string>("");
   
   // Scan parameters
   const [gender, setGender] = useState<"male" | "female">("male");
@@ -85,15 +95,32 @@ export default function PalmScanPage() {
     initMediaPipe();
 
     if (typeof window !== "undefined") {
-      const storedToken = localStorage.getItem("authToken");
+      const storedToken =
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("accessToken") ||
+        localStorage.getItem("token");
       const storedUser = localStorage.getItem("authUser");
-      if (storedToken && storedUser) {
+      if (storedToken) {
         setToken(storedToken);
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error(e);
+        if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
+          try {
+            setUser(JSON.parse(storedUser));
+          } catch (e) {
+            console.error(e);
+          }
         }
+        fetch("https://api.calnovaai.com/glowlab/auth/me", {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        })
+          .then((r) => r.json())
+          .then((me) => {
+            if ((me.code === 0 || me.code === "OPERATION_SUCCESS") && me.data) {
+              localStorage.setItem("authToken", storedToken);
+              localStorage.setItem("authUser", JSON.stringify(me.data));
+              setUser(me.data);
+            }
+          })
+          .catch(() => {});
       }
     }
     startCamera();
@@ -166,7 +193,15 @@ export default function PalmScanPage() {
   };
 
   const renderLoop = () => {
-    if (!videoRef.current || !canvasRef.current || !handLandmarkerRef.current || !cameraActive) return;
+    if (!videoRef.current || !canvasRef.current || !cameraActive) return;
+    
+    // Nếu MediaPipe chưa load xong, vẫn phải giữ vòng lặp chờ
+    if (!handLandmarkerRef.current) {
+      if (status === "idle" && cameraActive) {
+        requestRef.current = requestAnimationFrame(renderLoop);
+      }
+      return;
+    }
     
     const video = videoRef.current;
     
@@ -209,9 +244,67 @@ export default function PalmScanPage() {
         
         // Hand should occupy a reasonable portion of the screen (at least 30%)
         const isGoodSize = handWidth > 0.3 || handHeight > 0.3;
+        
+        let isQualityGood = true;
+        let currentWarning = "";
+        
+        if (!isGoodSize) {
+           isQualityGood = false;
+           currentWarning = "Đưa bàn tay lại gần camera hơn.";
+        }
+
+        // Check Brightness and Sharpness
+        if (isQualityGood) {
+            const tempC = document.createElement("canvas");
+            tempC.width = 128; tempC.height = 128;
+            const tempCtx = tempC.getContext("2d", { willReadFrequently: true });
+            if (tempCtx) {
+                const sx = Math.max(0, minX * video.videoWidth);
+                const sy = Math.max(0, minY * video.videoHeight);
+                const sw = Math.min(video.videoWidth - sx, handWidth * video.videoWidth);
+                const sh = Math.min(video.videoHeight - sy, handHeight * video.videoHeight);
+                
+                tempCtx.drawImage(video, sx, sy, sw, sh, 0, 0, 128, 128);
+                const data = tempCtx.getImageData(0, 0, 128, 128).data;
+                
+                let colorSum = 0;
+                let edgeSum = 0;
+                let count = 0;
+                
+                for (let y = 0; y < 128; y += 2) {
+                  for (let x = 0; x < 127; x += 2) {
+                     const idx = (y * 128 + x) * 4;
+                     const nextIdx = (y * 128 + x + 2) * 4;
+                     const g1 = (data[idx] + data[idx+1] + data[idx+2]) / 3;
+                     const g2 = (data[nextIdx] + data[nextIdx+1] + data[nextIdx+2]) / 3;
+                     colorSum += g1;
+                     edgeSum += Math.abs(g1 - g2);
+                     count++;
+                  }
+                }
+                const brightness = colorSum / count;
+                const sharpness = edgeSum / count;
+                
+                if (brightness < 40) {
+                    isQualityGood = false;
+                    currentWarning = "Thiếu sáng. Hãy đưa tay ra nơi sáng hơn.";
+                } else if (brightness > 240) {
+                    isQualityGood = false;
+                    currentWarning = "Quá chói. Vui lòng giảm ánh sáng.";
+                } else if (sharpness < 1.5) {
+                    isQualityGood = false;
+                    currentWarning = "Bị mờ. Vui lòng giữ yên tay.";
+                }
+            }
+        }
+        
+        if (currentWarning !== scanWarningRef.current) {
+           scanWarningRef.current = currentWarning;
+           setScanWarning(currentWarning);
+        }
 
         // Auto-capture logic
-        if (isGoodSize) {
+        if (isQualityGood) {
           if (detectionStartTimeRef.current === null) {
             detectionStartTimeRef.current = performance.now();
           } else if (performance.now() - detectionStartTimeRef.current > 2500) { // wait 2.5s
@@ -245,6 +338,10 @@ export default function PalmScanPage() {
       } else {
         // Reset counter if hand is lost
         detectionStartTimeRef.current = null;
+        if (scanWarningRef.current !== "Không tìm thấy bàn tay.") {
+           scanWarningRef.current = "Không tìm thấy bàn tay.";
+           setScanWarning("Không tìm thấy bàn tay.");
+        }
       }
       ctx.restore();
     }
@@ -294,6 +391,16 @@ export default function PalmScanPage() {
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCapturedBlob(file);
+    setCapturedUrl(URL.createObjectURL(file));
+    stopCamera();
+    triggerUpload(file);
+    e.target.value = "";
+  };
+
   const getAPIUrls = () => {
     let aiUrl = "https://api.calnovaai.com/ai";
     let saveUrl = "https://api.calnovaai.com/glowlab";
@@ -316,6 +423,7 @@ export default function PalmScanPage() {
     const interpretation = palm.interpretation || {};
     const traditional = interpretation.traditional || {};
     const mystical = interpretation.mystical || {};
+    const detailedInsights = Array.isArray(traditional.detailed_insights) ? traditional.detailed_insights : [];
     
     const interpretations: any[] = [];
     let id = 1;
@@ -360,27 +468,48 @@ export default function PalmScanPage() {
       });
     }
 
-    const lifeAspects: any[] = [];
-    let aspectId = 1;
-    if (traditional.life_aspects) {
-      for (const [key, value] of Object.entries(traditional.life_aspects)) {
-        lifeAspects.push({
-          id: aspectId++,
-          aspect: key,
-          content: value,
+    // Fallback to template detailed_insights if mystical lines were not populated
+    if (interpretations.length === 0 && detailedInsights.length > 0) {
+      for (const item of detailedInsights) {
+        const rawType = String(item.line_type || "unknown").replace("_line", "").toLowerCase();
+        interpretations.push({
+          id: id++,
+          lineType: rawType,
+          pattern: item.pattern || "",
+          meaning: item.meaning || "",
+          lengthPx: Number(item.length_px || 0),
+          confidence: Number(item.confidence || palm.confidence || 0.85),
         });
       }
     }
 
+    const lifeAspects: any[] = [];
+    let aspectId = 1;
+    const validAspects = ["health", "career", "relationships", "personality"];
+    if (traditional.life_aspects) {
+      for (const [key, value] of Object.entries(traditional.life_aspects)) {
+        if (validAspects.includes(key)) {
+          lifeAspects.push({
+            id: aspectId++,
+            aspect: key,
+            content: Array.isArray(value) ? value.join("\n") : String(value || ""),
+          });
+        }
+      }
+    }
+
+    const hasLine = (lt: string) =>
+      interpretations.some((i) => i.lineType === lt) ? 1 : 0;
+
     return {
       id: 0,
       userId: 0,
-      annotatedImage: apiResult.data?.annotated_image_url || "",
+      annotatedImage: apiResult.data?.annotated_image_url || capturedUrl || "",
       palmLinesDetected: interpretations.length,
-      detectedHeartLine: mystical.heart_line ? 1 : 0,
-      detectedHeadLine: mystical.head_line ? 1 : 0,
-      detectedLifeLine: mystical.life_line ? 1 : 0,
-      detectedFateLine: mystical.fate_line ? 1 : 0,
+      detectedHeartLine: hasLine("heart"),
+      detectedHeadLine: hasLine("head"),
+      detectedLifeLine: hasLine("life"),
+      detectedFateLine: hasLine("fate"),
       targetLines: "",
       imageHeight: 0,
       imageWidth: 0,
@@ -392,19 +521,74 @@ export default function PalmScanPage() {
     };
   };
 
+  const normalizeImageBlob = async (inputBlob: Blob): Promise<Blob> => {
+    if (typeof window === "undefined") return inputBlob;
+    return new Promise((resolve) => {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(inputBlob);
+      img.onload = () => {
+        URL.revokeObjectURL(objUrl);
+        const MAX_DIM = 960;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(inputBlob);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (compressed) => resolve(compressed || inputBlob),
+          "image/jpeg",
+          0.82
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objUrl);
+        resolve(inputBlob);
+      };
+      img.src = objUrl;
+    });
+  };
+
   const triggerUpload = async (blob: Blob) => {
     setStatus("uploading");
     setErrorMessage("");
     
     const { aiUrl } = getAPIUrls();
-    const formData = new FormData();
-    formData.append("file", blob, "palm_capture.jpg");
+    const normalizedBlob = await normalizeImageBlob(blob);
+    setCapturedBlob(normalizedBlob);
     
     try {
-      const res = await fetch(`${aiUrl}/analyze-palm/?engine=gpt&language=vi&gender=${gender}`, {
-        method: "POST",
-        body: formData,
-      });
+      const buildFormData = () => {
+        const fd = new FormData();
+        fd.append("file", normalizedBlob, "palm_capture.jpg");
+        return fd;
+      };
+
+      let res: Response;
+      try {
+        res = await fetch(`${aiUrl}/analyze-palm/?engine=gpt&language=vi&gender=${gender}`, {
+          method: "POST",
+          body: buildFormData(),
+        });
+      } catch (networkErr) {
+        res = await fetch(`${aiUrl}/analyze-palm/?engine=template&language=vi&gender=${gender}`, {
+          method: "POST",
+          body: buildFormData(),
+        });
+      }
 
       if (!res.ok) {
         let errorMsg = `Lỗi từ máy chủ AI: ${res.status}`;
@@ -412,7 +596,9 @@ export default function PalmScanPage() {
           const errData = await res.json();
           if (errData && errData.detail) {
             if (typeof errData.detail === "object") {
-              errorMsg = errData.detail.message || errData.detail.suggestion || JSON.stringify(errData.detail);
+              const msg = errData.detail.message || "";
+              const sug = errData.detail.suggestion || "";
+              errorMsg = [msg, sug].filter(Boolean).join(" ") || JSON.stringify(errData.detail);
             } else {
               errorMsg = errData.detail;
             }
@@ -428,12 +614,6 @@ export default function PalmScanPage() {
         result = await res.json();
       } catch (e: any) {
         console.error("JSON parse error, attempting text parse:", e);
-        try {
-          const text = await res.text();
-          console.error("Non-JSON response text:", text.substring(0, 200));
-        } catch (textErr) {
-          // Ignore
-        }
         throw new Error(`Máy chủ AI trả về kết quả không hợp lệ (Mã: ${res.status})`);
       }
       
@@ -447,7 +627,12 @@ export default function PalmScanPage() {
       }
     } catch (err: any) {
       console.error("Analysis failed:", err);
-      setErrorMessage(err.message || "Lỗi xử lý hình ảnh.");
+      const rawMsg = String(err?.message || "");
+      const friendlyMsg =
+        rawMsg.includes("Failed to fetch") || rawMsg.includes("NetworkError") || rawMsg.includes("Load failed")
+          ? "Không thể kết nối đến máy chủ phân tích chỉ tay hoặc ảnh tải lên quá lớn. Vui lòng chọn ảnh lòng bàn tay rõ nét (JPG/PNG) và thử lại."
+          : rawMsg || "Lỗi xử lý hình ảnh.";
+      setErrorMessage(friendlyMsg);
       setStatus("error");
     }
   };
@@ -463,47 +648,40 @@ export default function PalmScanPage() {
     const { saveUrl } = getAPIUrls();
     
     try {
-      // 1. We must mock the Cloudinary URL since our DB requires originalUrl
-      // To bypass uploading to Cloudinary, we pass a mockup url or build formData if backed supports it.
-      // Here we map to matches face.api.ts payload schema.
-      const interpretation = analysisData.interpretation || {};
-      const mystical = interpretation.mystical || {};
-      const traditional = interpretation.traditional || {};
-      const linesData = analysisData.lines || {};
+      const validLineTypes = ["heart", "head", "life", "fate", "sun", "unknown"];
+      const validAspects = ["health", "career", "relationships", "personality"];
 
-      const interpretationsArray: any[] = [];
-      if (mystical.detailed_insights && Array.isArray(mystical.detailed_insights)) {
-        mystical.detailed_insights.forEach((insight: any) => {
-          interpretationsArray.push({
-            lineType: insight.line.replace("_line", ""),
-            pattern: insight.essence || "",
-            meaning: insight.narrative || "",
-            lengthPx: linesData[insight.line]?.length_px || 0,
-            confidence: linesData[insight.line]?.bbox_confidence || 0,
-          });
-        });
-      }
+      const interpretationsArray = (analysisData.interpretations || []).map((item: any) => {
+        const rawType = String(item.lineType || "unknown").replace("_line", "").toLowerCase();
+        return {
+          lineType: validLineTypes.includes(rawType) ? rawType : "unknown",
+          pattern: String(item.pattern || ""),
+          meaning: String(item.meaning || ""),
+          lengthPx: Number(item.lengthPx || 0),
+          confidence: Number(item.confidence || 0.9),
+        };
+      });
 
-      const lifeAspectsArray: any[] = [];
-      const aspectsData = traditional.life_aspects || {};
-      for (const [key, val] of Object.entries(aspectsData)) {
-        lifeAspectsArray.push({
-          aspect: key,
-          content: Array.isArray(val) ? val.join("\n") : String(val),
-        });
-      }
+      const lifeAspectsArray = (analysisData.lifeAspects || [])
+        .filter((asp: any) => validAspects.includes(String(asp.aspect)))
+        .map((asp: any) => ({
+          aspect: String(asp.aspect),
+          content: Array.isArray(asp.content) ? asp.content.join("\n") : String(asp.content || ""),
+        }));
 
       const payload = {
-        userId: user?.id?.toString() || "guest",
-        gender,
-        handSide,
-        originalUrl: analysisData.annotatedImage || "",
-        annotatedImage: annotatedImage || "",
-        targetLines: JSON.stringify(linesData),
+        userId: Number(user?.id || user?.userId || 1),
+        annotatedImage: annotatedImage || analysisData.annotatedImage || "",
+        palmLinesDetected: Number(analysisData.palmLinesDetected || interpretationsArray.length),
+        detectedHeartLine: Number(analysisData.detectedHeartLine || 0),
+        detectedHeadLine: Number(analysisData.detectedHeadLine || 0),
+        detectedLifeLine: Number(analysisData.detectedLifeLine || 0),
+        detectedFateLine: Number(analysisData.detectedFateLine || 0),
+        targetLines: analysisData.targetLines || "[]",
         imageHeight: 1080,
         imageWidth: 1080,
         imageChannels: 3,
-        summaryText: traditional.overall_assessment || "Xem chỉ tay trực tiếp trên Web",
+        summaryText: analysisData.summaryText || "Xem chỉ tay trực tiếp trên Web",
         interpretations: interpretationsArray,
         lifeAspects: lifeAspectsArray,
       };
@@ -537,7 +715,7 @@ export default function PalmScanPage() {
         return;
       }
 
-      if (res.ok && result && (result.code === 0 || result.code === "OPERATION_SUCCESS" || result.data)) {
+      if (res.ok && result && result.success !== false && (result.code === 0 || result.code === "OPERATION_SUCCESS" || result.data)) {
         setSaveStatus("saved");
         const freshId = result.data?.id || result.id;
         setSavedId(freshId);
@@ -551,12 +729,41 @@ export default function PalmScanPage() {
     }
   };
 
-  const handleShareLink = () => {
+  const handleShareLink = async () => {
     if (!savedId) return;
     const hashed = encodeId(parseInt(savedId.toString(), 10));
-    const shareUrl = `${window.location.origin}/huyen-co/share/palm-result?id=${hashed}`;
-    navigator.clipboard.writeText(shareUrl);
-    alert("Đã sao chép liên kết chia sẻ của bạn vào Clipboard!");
+    const refParam = user?.referralCode ? `&ref=${user.referralCode}` : "";
+    const shareUrl = `${window.location.origin}/huyen-co/share/palm-result?id=${hashed}${refParam}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      // Fallback if clipboard blocked
+    }
+
+    // Trigger share reward & refresh user credits immediately
+    const { saveUrl } = getAPIUrls();
+    let rewardMsg = "Đã sao chép liên kết chia sẻ vào Clipboard!";
+    try {
+      const oldCredits = Number(user?.credits ?? 0);
+      await fetch(`${saveUrl}/palm-analysis/shared/${savedId}`);
+      if (token) {
+        const meRes = await fetch(`${saveUrl}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const meData = await meRes.json();
+        if (meData?.data) {
+          const newCredits = Number(meData.data.credits ?? oldCredits);
+          setUser(meData.data);
+          localStorage.setItem("authUser", JSON.stringify(meData.data));
+          if (newCredits > oldCredits) {
+            rewardMsg = `🎉 Đã sao chép liên kết chia sẻ! Bạn vừa nhận được +${newCredits - oldCredits} Tín Chỉ thưởng chia sẻ!`;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Share reward check error:", e);
+    }
+    alert(rewardMsg);
   };
 
   const handleLoginSuccess = (newToken: string, newUser: any) => {
@@ -572,67 +779,129 @@ export default function PalmScanPage() {
       id: savedId ? parseInt(savedId) : 0,
     };
     return (
-      <PalmResultClient
-        analysis={mappedAnalysisData}
-        isScanningPage={true}
-        saveStatus={saveStatus}
-        onSave={handleSaveResult}
-        onShare={handleShareLink}
-        onReset={() => {
-          setStatus("idle");
-          setSaveStatus("unsaved");
-          setSavedId(null);
-          startCamera();
-        }}
-        token={token}
-      />
+      <>
+        <PalmResultClient
+          analysis={mappedAnalysisData}
+          isScanningPage={true}
+          saveStatus={saveStatus}
+          onSave={handleSaveResult}
+          onShare={handleShareLink}
+          onReset={() => {
+            setStatus("idle");
+            setSaveStatus("unsaved");
+            setSavedId(null);
+            startCamera();
+          }}
+          token={token}
+        />
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#06030d] text-white font-sans relative flex flex-col justify-between">
-      {/* Background patterns */}
-      <div className="absolute inset-0 bg-[radial-gradient(#ffffff_0.5px,transparent_0.5px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
-      <div className="absolute top-[20%] left-[-20%] w-[60%] aspect-square rounded-full bg-purple-900/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[20%] right-[-20%] w-[60%] aspect-square rounded-full bg-indigo-900/10 blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-[#07060B] text-[#EFECE6] font-sans relative flex flex-col justify-between overflow-x-hidden">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
 
-      {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-indigo-500/10 relative z-20 bg-[#06030d]/80 backdrop-blur-md">
-        <Link href="/huyen-co" className="flex items-center gap-2 hover:text-[#d4af37] transition-all">
-          <span className="text-xl">←</span>
-          <span className="text-xs uppercase font-black tracking-widest">Trang chủ</span>
-        </Link>
-        <h1 className="text-sm font-black tracking-widest text-[#d4af37] uppercase font-serif">
-          AI Palm Profiler • Quét Chỉ Tay
-        </h1>
-        <div className="w-12" />
-      </header>
+      {/* Subtle Oriental Celestial Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[65vw] h-[45vw] bg-[#D4AF37]/[0.05] rounded-full blur-[140px]" />
+        <div className="absolute inset-0 opacity-[0.1] bg-[radial-gradient(#D4AF37_0.75px,transparent_0.75px)] [background-size:48px_48px]" />
+      </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
+      {/* Unified Header */}
+      <HuyenCoHeader
+        user={user}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        subtitle="Pháp Môn Thủ Tướng Học & Chưởng Pháp AI"
+      />
+
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative z-10">
         {status === "idle" && (
-          <div className="w-full max-w-md flex flex-col items-center gap-6">
+          <div className="w-full max-w-md flex flex-col items-center gap-5">
+            {/* Concise Guidance Header */}
+            <div className="text-center space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#120F1D] border border-[#D4AF37]/25 text-[10px] font-bold uppercase tracking-[0.2em] text-[#E8C96A]">
+                <SparkleIcon size={12} />
+                <span>Sinh Đạo • Trí Đạo • Tâm Đạo</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+                Soi Chiếu Thủ Tướng
+              </h1>
+              <p className="text-xs text-[#C5B386] max-w-xs mx-auto">
+                Mở phẳng lòng bàn tay dưới ánh sáng rõ nét hoặc tải lên ảnh chụp lòng bàn tay từ thiết bị.
+              </p>
+            </div>
+
             {/* Custom Camera Container */}
-            <div className="w-full aspect-[4/5] rounded-3xl overflow-hidden border border-indigo-500/30 relative bg-black shadow-2xl flex items-center justify-center">
+            <div className="w-full aspect-[4/5] rounded-3xl overflow-hidden border border-[#D4AF37]/35 relative bg-[#0B0912] shadow-[0_20px_50px_rgba(0,0,0,0.75)] flex items-center justify-center">
               {cameraError ? (
-                <div className="text-center p-6 space-y-4">
-                  <span className="text-4xl block">⚠️</span>
-                  <p className="text-xs text-slate-300">{cameraError}</p>
-                  <button onClick={startCamera} className="px-4 py-2 bg-indigo-600 rounded-full text-xs font-bold uppercase tracking-wider">
-                    Thử lại
-                  </button>
+                <div className="text-center p-7 space-y-4">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#120F1D] border border-[#D4AF37]/30 mx-auto">
+                    <PalmReadingIcon size={40} />
+                  </div>
+                  <p className="text-xs text-[#C5B386] leading-relaxed">{cameraError}</p>
+                  <div className="flex flex-wrap justify-center gap-2.5 pt-1">
+                    <button
+                      onClick={startCamera}
+                      className="px-4 py-2.5 bg-[#120F1D] hover:bg-white/10 border border-[#D4AF37]/30 rounded-full text-xs font-bold text-[#E8C96A] uppercase tracking-wider cursor-pointer"
+                    >
+                      Bật Lại Camera
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-5 py-2.5 hc-gold-btn rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <UploadImageIcon size={15} />
+                      <span>Tải Ảnh Từ Máy</span>
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
-                  <video ref={videoRef} className={`w-full h-full object-cover ${isMirrored ? "scale-x-[-1]" : ""}`} playsInline muted />
-                  
-                  <canvas ref={canvasRef} className={`absolute top-0 left-0 w-full h-full object-cover pointer-events-none ${isMirrored ? "scale-x-[-1]" : ""}`} />
-                  
+                  <video
+                    ref={videoRef}
+                    className={`w-full h-full object-cover ${isMirrored ? "scale-x-[-1]" : ""}`}
+                    playsInline
+                    muted
+                  />
+
+                  <canvas
+                    ref={canvasRef}
+                    className={`absolute top-0 left-0 w-full h-full object-cover pointer-events-none ${
+                      isMirrored ? "scale-x-[-1]" : ""
+                    }`}
+                  />
+
                   {/* Palm Scanner Guides Overlay */}
-                  <div className="absolute inset-0 border-[3px] border-[#d4af37]/20 rounded-3xl pointer-events-none m-4 flex items-center justify-center">
-                    {/* Golden Hand silhouette boundary overlay */}
-                    <div className="w-4/5 h-4/5 border border-dashed border-[#d4af37]/40 rounded-full flex items-center justify-center animate-pulse">
-                      <span className="text-[10px] text-[#d4af37] font-bold tracking-widest bg-black/60 px-3 py-1 rounded-full uppercase">
-                        Đặt bàn tay vào giữa
+                  <div
+                    className={`absolute inset-0 border-2 ${
+                      scanWarning ? "border-red-500/50" : "border-[#D4AF37]/25"
+                    } rounded-3xl pointer-events-none m-4 flex items-center justify-center transition-colors`}
+                  >
+                    <div
+                      className={`w-4/5 h-4/5 border-2 border-dashed ${
+                        scanWarning ? "border-red-500/50" : "border-[#D4AF37]/45"
+                      } rounded-full flex items-end justify-center pb-5`}
+                    >
+                      <span
+                        className={`text-[10px] font-bold tracking-widest bg-[#07060B]/80 border px-3.5 py-1.5 rounded-full uppercase backdrop-blur-md ${
+                          scanWarning
+                            ? "text-red-300 border-red-500/40"
+                            : "text-[#FFF3C4] border-[#D4AF37]/35"
+                        }`}
+                      >
+                        {scanWarning || "Đặt lòng bàn tay vào giữa khung ngắm"}
                       </span>
                     </div>
                   </div>
@@ -640,23 +909,29 @@ export default function PalmScanPage() {
               )}
             </div>
 
-            {/* Parameters Controls */}
-            <div className="w-full bg-[#120a26]/80 border border-indigo-500/20 rounded-2xl p-4 space-y-4">
+            {/* Parameters Controls (Nam Tả / Nữ Hữu) */}
+            <div className="w-full hc-card rounded-2xl p-4 space-y-3.5">
               <div className="flex justify-between items-center">
-                <span className="text-xs uppercase tracking-wider text-indigo-300 font-bold">Giới tính:</span>
+                <span className="text-xs uppercase tracking-wider text-[#C5B386] font-bold">
+                  Giới tính bản mệnh:
+                </span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setGender("male")}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-                      gender === "male" ? "bg-cyan-500 text-black shadow" : "bg-[#0d071a] text-slate-400 border border-indigo-500/10"
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      gender === "male"
+                        ? "hc-gold-btn"
+                        : "bg-[#0B0912] text-[#C5B386] border border-[#D4AF37]/20 hover:text-white"
                     }`}
                   >
                     Nam (Tả)
                   </button>
                   <button
                     onClick={() => setGender("female")}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${
-                      gender === "female" ? "bg-rose-500 text-white shadow" : "bg-[#0d071a] text-slate-400 border border-indigo-500/10"
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      gender === "female"
+                        ? "hc-gold-btn"
+                        : "bg-[#0B0912] text-[#C5B386] border border-[#D4AF37]/20 hover:text-white"
                     }`}
                   >
                     Nữ (Hữu)
@@ -664,137 +939,132 @@ export default function PalmScanPage() {
                 </div>
               </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-xs uppercase tracking-wider text-indigo-300 font-bold">Bàn tay quét:</span>
-                <span className="text-xs font-bold text-[#d4af37] tracking-widest uppercase">
-                  {handSide === "left" ? "Tay Trái (Tả)" : "Tay Phải (Hữu)"}
+              <div className="flex justify-between items-center border-t border-[#D4AF37]/12 pt-3">
+                <span className="text-xs uppercase tracking-wider text-[#C5B386] font-bold">
+                  Bàn tay soi chiếu:
                 </span>
-              </div>
-            </div>
-
-            {/* Capture triggers */}
-            <button
-              onClick={handleCapture}
-              disabled={!cameraActive}
-              className="w-20 h-20 rounded-full border-4 border-white bg-white/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 cursor-pointer shadow-lg shadow-white/10"
-            >
-              <div className="w-16 h-16 rounded-full bg-white hover:bg-slate-200 transition-colors" />
-            </button>
-          </div>
-        )}
-
-        {(status === "capturing" || status === "uploading") && (
-          <div className="w-full max-w-md flex flex-col items-center gap-6">
-            <style>{`
-              @keyframes scan-line-movement {
-                0% { top: 0%; opacity: 0.3; }
-                10% { opacity: 1; }
-                90% { opacity: 1; }
-                100% { top: 100%; opacity: 0.3; }
-              }
-              .animate-scan-line {
-                position: absolute;
-                left: 0;
-                right: 0;
-                height: 3px;
-                background: linear-gradient(90deg, transparent, #d4af37, transparent);
-                box-shadow: 0 0 15px #d4af37, 0 0 5px #d4af37;
-                animation: scan-line-movement 3s linear infinite;
-                z-index: 10;
-              }
-            `}</style>
-            
-            <div className="w-full aspect-[4/5] rounded-3xl overflow-hidden border border-[#d4af37]/30 relative bg-black shadow-2xl flex items-center justify-center">
-              {capturedUrl && (
-                <img 
-                  src={capturedUrl} 
-                  alt="Captured palm"
-                  className={`w-full h-full object-cover rounded-3xl ${isMirrored ? "scale-x-[-1]" : ""} blur-sm opacity-80`}
-                />
-              )}
-              <div className="absolute inset-0 bg-black/40" />
-              
-              {/* Scan Line */}
-              <div className="animate-scan-line" />
-              
-              {/* Scanner Guide Overlay */}
-              <div className="absolute inset-0 border-[3px] border-[#d4af37]/10 rounded-3xl pointer-events-none m-4 flex items-center justify-center">
-                <div className="w-4/5 h-4/5 border border-dashed border-[#d4af37]/20 rounded-full flex items-center justify-center">
-                  <span className="text-[10px] text-[#d4af37]/60 font-bold tracking-widest bg-black/40 px-3 py-1 rounded-full uppercase">
-                    AI SCANNING...
-                  </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setHandSide("left")}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      handSide === "left"
+                        ? "bg-[#D4AF37]/25 text-[#FFF3C4] border border-[#D4AF37]/60"
+                        : "bg-[#0B0912] text-[#C5B386] border border-[#D4AF37]/20 hover:text-white"
+                    }`}
+                  >
+                    Tay Trái (Tả)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHandSide("right")}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      handSide === "right"
+                        ? "bg-[#D4AF37]/25 text-[#FFF3C4] border border-[#D4AF37]/60"
+                        : "bg-[#0B0912] text-[#C5B386] border border-[#D4AF37]/20 hover:text-white"
+                    }`}
+                  >
+                    Tay Phải (Hữu)
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="text-center space-y-3 px-4">
-              <div className="w-10 h-10 rounded-full border-2 border-t-[#d4af37] border-indigo-500/10 animate-spin mx-auto flex items-center justify-center">
-                <span className="text-xs">🔮</span>
-              </div>
-              <h3 className="text-md font-black tracking-widest text-[#d4af37] uppercase font-serif">
-                Đang phân tích vân tay...
-              </h3>
-              <p className="text-xs text-slate-300 min-h-[40px] leading-relaxed transition-all duration-500">
-                {currentLoadingMessage}
-              </p>
+            {/* Capture triggers */}
+            <div className="flex items-center gap-4 w-full justify-center">
+              <button
+                onClick={handleCapture}
+                disabled={!cameraActive}
+                title="Chụp ảnh lòng bàn tay"
+                className="w-18 h-18 rounded-full border-2 border-[#D4AF37] bg-[#D4AF37]/15 flex items-center justify-center hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:scale-100 cursor-pointer shadow-[0_0_25px_rgba(212,175,55,0.25)]"
+              >
+                <div className="w-14 h-14 rounded-full hc-gold-btn flex items-center justify-center text-[10px] font-black uppercase tracking-wider">
+                  Chụp
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-5 py-3.5 rounded-2xl hc-card hover:border-[#D4AF37]/60 text-xs font-bold text-[#FFF3C4] uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2"
+              >
+                <UploadImageIcon size={16} className="text-[#D4AF37]" />
+                <span>Tải Ảnh Bàn Tay</span>
+              </button>
             </div>
           </div>
         )}
 
+        {(status === "capturing" || status === "uploading") && (
+          <ScanWaitingOverlay
+            mode="palm"
+            capturedUrl={capturedUrl}
+            isMirrored={isMirrored}
+          />
+        )}
+
         {status === "error" && (
-          <div className="w-full max-w-md bg-[#120a26] border border-[#d4af37]/40 rounded-3xl p-8 text-center space-y-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(212,175,55,0.03))] pointer-events-none" />
-            
-            <div className="w-16 h-16 bg-[#d4af37]/10 rounded-full flex items-center justify-center mx-auto border border-[#d4af37]/20">
-              <span className="text-3xl">🔮</span>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-md font-bold text-[#d4af37] uppercase tracking-widest font-serif">
-                Chưa Nhận Diện Rõ Chỉ Tay
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
-                AI cần nhìn rõ các đường vân chính (Sinh đạo, Trí đạo, Tâm đạo) trong lòng bàn tay để giải mã mệnh lý chính xác.
-              </p>
+          <div className="w-full max-w-md hc-card rounded-3xl p-7 sm:p-8 text-center space-y-6 relative overflow-hidden">
+            <div className="w-16 h-16 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center mx-auto border border-[#D4AF37]/30">
+              <PalmReadingIcon size={42} />
             </div>
 
-            <div className="bg-[#0b0517] border border-indigo-500/10 rounded-2xl p-4 text-left space-y-3">
-              <h4 className="text-[10px] font-black text-indigo-300 uppercase tracking-widest border-b border-indigo-500/10 pb-1.5">
-                💡 Bí quyết quét bàn tay thành công:
+            <div className="space-y-2">
+              <h3 className="text-xl font-serif font-bold text-[#FFF3C4] uppercase tracking-wider">
+                Chưa Nhận Diện Rõ Đường Chỉ Tay
+              </h3>
+              {errorMessage ? (
+                <div className="bg-amber-950/40 border border-[#D4AF37]/35 rounded-xl p-3.5 text-xs text-[#FFF3C4] leading-relaxed">
+                  {errorMessage}
+                </div>
+              ) : (
+                <p className="text-xs text-[#C5B386] leading-relaxed max-w-xs mx-auto">
+                  Hệ thống cần nhìn rõ 3 đường vân chính (Sinh đạo, Trí đạo, Tâm đạo) trong lòng bàn tay để giải mã chính xác.
+                </p>
+              )}
+            </div>
+
+            <div className="bg-[#0B0912]/90 border border-[#D4AF37]/15 rounded-2xl p-4 text-left space-y-2.5">
+              <h4 className="text-[10px] font-bold text-[#E8C96A] uppercase tracking-widest border-b border-[#D4AF37]/15 pb-1.5">
+                Chỉ dẫn chụp lòng bàn tay chuẩn xác:
               </h4>
-              <ul className="text-[11px] text-slate-300 space-y-2 list-none pl-0">
+              <ul className="text-xs text-[#C5B386] space-y-2 list-none pl-0">
                 <li className="flex items-start gap-2">
-                  <span className="text-[#d4af37] mt-0.5">✦</span>
-                  <span><strong>Đủ ánh sáng:</strong> Tránh bóng râm che mất lòng bàn tay. Chụp ở nơi có ánh sáng đồng đều.</span>
+                  <span className="text-[#D4AF37] mt-0.5">✦</span>
+                  <span>
+                    <strong className="text-[#EFECE6]">Đủ ánh sáng:</strong> Tránh bóng râm che khuất lòng bàn tay, chụp dưới ánh sáng tự nhiên hoặc đèn đều.
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-[#d4af37] mt-0.5">✦</span>
-                  <span><strong>Xòe thẳng các ngón tay:</strong> Giữ bàn tay phẳng và các ngón tay hơi xòe ra để mở rộng lòng bàn tay.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d4af37] mt-0.5">✦</span>
-                  <span><strong>Tránh rung lắc:</strong> Giữ điện thoại song song với lòng bàn tay và chụp thật chắc tay.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#d4af37] mt-0.5">✦</span>
-                  <span><strong>Khoảng cách vừa phải:</strong> Đặt bàn tay vừa vặn vào vòng tròn hướng dẫn trên camera.</span>
+                  <span className="text-[#D4AF37] mt-0.5">✦</span>
+                  <span>
+                    <strong className="text-[#EFECE6]">Mở phẳng lòng bàn tay:</strong> Duỗi thẳng tự nhiên các ngón tay để lộ rõ Tam Đạo.
+                  </span>
                 </li>
               </ul>
             </div>
 
-            <button
-              onClick={() => {
-                setStatus("idle");
-                startCamera();
-              }}
-              className="w-full py-3 bg-gradient-to-r from-amber-800 to-amber-950 hover:from-amber-900 hover:to-amber-950 text-white font-bold text-xs tracking-widest uppercase rounded-xl shadow-lg transition-all border border-amber-700/30 cursor-pointer"
-            >
-              Thử quét lại ngay
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <button
+                onClick={() => {
+                  setStatus("idle");
+                  startCamera();
+                }}
+                className="flex-1 py-3 hc-gold-btn font-bold text-xs tracking-widest uppercase rounded-xl cursor-pointer"
+              >
+                Quét Lại Camera
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 py-3 bg-[#0B0912] hover:bg-white/10 text-[#E8C96A] font-bold text-xs tracking-widest uppercase rounded-xl border border-[#D4AF37]/30 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <UploadImageIcon size={15} />
+                <span>Tải Ảnh Khác</span>
+              </button>
+            </div>
           </div>
         )}
-
-
       </main>
 
       {/* Auth Modal for Login to Save */}
@@ -805,8 +1075,8 @@ export default function PalmScanPage() {
       />
 
       {/* Footer info */}
-      <footer className="px-6 py-4 border-t border-indigo-500/10 text-center text-[10px] text-slate-600">
-        <p>Huyền Cơ AI • Sử dụng mô hình YOLOv11 & SAM phân tích hình thái sinh học.</p>
+      <footer className="px-6 py-4 border-t border-[#D4AF37]/15 text-center text-[11px] text-[#C5B386]/70 relative z-10">
+        <p>Huyền Cơ Các • Tinh Hoa Thủ Tướng Học Đông Phương & Sinh Trắc Học AI</p>
       </footer>
     </div>
   );

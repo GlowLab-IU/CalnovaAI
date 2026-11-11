@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import RollDatePicker from "../RollDatePicker";
+import HuyenCoHeader from "../components/HuyenCoHeader";
+import { TuViAstrolabeIcon, AICoachOracleIcon } from "../components/HuyenCoIcons";
 
 interface StarInfo {
   star_id: number;
@@ -135,14 +138,7 @@ export default function LasoTuviPage() {
   const router = useRouter();
 
   const getTuviBase = () => {
-    let baseUrl = "https://api.calnovaai.com/tuvi";
-    if (typeof window !== "undefined") {
-      const hostname = window.location.hostname;
-      if (hostname.includes("calnovaai.com")) {
-        baseUrl = "https://api.calnovaai.com/tuvi";
-      }
-    }
-    return baseUrl;
+    return "https://api.calnovaai.com/glowlab/tuvi";
   };
 
   // Navigation states
@@ -178,12 +174,15 @@ export default function LasoTuviPage() {
   // Check Auth and load charts on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const storedToken = localStorage.getItem("authToken");
+    const storedToken =
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("accessToken") ||
+      localStorage.getItem("token");
     const storedUser = localStorage.getItem("authUser");
-    
-    if (!storedToken || !storedUser) {
+
+    if (!storedToken) {
       setIsAuthorized(false);
-    } else {
+    } else if (storedUser && storedUser !== "undefined" && storedUser !== "null") {
       setIsAuthorized(true);
       try {
         const parsed = JSON.parse(storedUser);
@@ -193,7 +192,40 @@ export default function LasoTuviPage() {
       } catch (e) {
         console.error(e);
       }
+    } else {
+      fetch("https://api.calnovaai.com/glowlab/auth/me", {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      })
+        .then((res) => res.json())
+        .then((result) => {
+          if ((result.code === 0 || result.code === "OPERATION_SUCCESS") && result.data) {
+            localStorage.setItem("authToken", storedToken);
+            localStorage.setItem("authUser", JSON.stringify(result.data));
+            setUser(result.data);
+            setIsAuthorized(true);
+            const uid = Number(result.data.id || result.data.userId || 1);
+            fetchUserCharts(uid);
+          } else {
+            setIsAuthorized(false);
+          }
+        })
+        .catch(() => setIsAuthorized(false));
     }
+
+    const onAuthChange = (e: Event) => {
+      const custom = e as CustomEvent;
+      if (custom.detail?.user) {
+        setUser(custom.detail.user);
+        setIsAuthorized(true);
+        const uid = Number(custom.detail.user.id || custom.detail.user.userId || 1);
+        fetchUserCharts(uid);
+      } else if (custom.detail && !custom.detail.token) {
+        setUser(null);
+        setIsAuthorized(false);
+      }
+    };
+    window.addEventListener("huyenco-auth-change", onAuthChange);
+    return () => window.removeEventListener("huyenco-auth-change", onAuthChange);
   }, []);
 
   const fetchUserCharts = async (uid: number) => {
@@ -266,6 +298,7 @@ export default function LasoTuviPage() {
           birthDate: formData.birthDate,
           birthHour: Number(formData.birthHour),
           gender: formData.gender,
+          solarCalendar: formData.calendarType === "solar",
           isPrimary: formMode === "self",
         }),
       });
@@ -345,60 +378,52 @@ export default function LasoTuviPage() {
 
   if (isAuthorized === false) {
     return (
-      <div className="min-h-screen bg-[#090514] text-white flex flex-col items-center justify-center p-6 text-center font-serif relative">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/30 via-[#090514] to-[#050209] z-0 pointer-events-none" />
-        <div className="relative z-10 max-w-md w-full bg-[#120a26]/80 border border-indigo-500/30 p-8 rounded-3xl backdrop-blur-sm shadow-2xl">
-          <span className="text-6xl block mb-6 animate-pulse">🔮</span>
-          <h2 className="text-2xl font-black uppercase text-[#fcd34d] tracking-widest mb-4">
-            Yêu Cầu Đăng Nhập
-          </h2>
-          <p className="text-slate-300 text-sm leading-6 mb-8">
-            Cổng Huyền Cơ AI yêu cầu bạn đăng nhập để tích lũy tín chỉ và an định lá số tử vi cá nhân của mình.
-          </p>
-          <Link
-            href="/huyen-co?redirect=/huyen-co/laso"
-            className="inline-block px-8 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-full font-bold uppercase text-xs tracking-wider transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)]"
-          >
-            Về Trang Chủ Đăng Nhập
-          </Link>
+      <div className="min-h-screen bg-[#07060B] text-[#F5EFE6] flex flex-col font-sans relative">
+        <HuyenCoHeader />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center relative z-10">
+          <div className="max-w-md w-full hc-card p-8 rounded-3xl shadow-2xl">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center text-[#E8C96A]">
+              <TuViAstrolabeIcon className="w-9 h-9" />
+            </div>
+            <h2 className="text-2xl font-bold uppercase text-[#E8C96A] tracking-widest mb-3 font-serif">
+              Yêu Cầu Đăng Nhập
+            </h2>
+            <p className="text-[#9E9482] text-sm leading-6 mb-8">
+              Cổng Huyền Cơ AI yêu cầu bạn đăng nhập để lập và lưu trữ Lá Số Tử Vi cá nhân trên tinh bàn 12 cung.
+            </p>
+            <Link
+              href="/huyen-co?redirect=/huyen-co/laso"
+              className="inline-block px-8 py-3.5 hc-gold-btn rounded-full font-bold uppercase text-xs tracking-wider"
+            >
+              Về Trang Chủ Đăng Nhập
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050814] text-slate-100 font-sans relative selection:bg-[#8b5cf6]/30 selection:text-white pb-24">
-      {/* Stars Background Overlay */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/20 via-[#050814] to-[#010208] z-0 pointer-events-none" />
-      <div className="fixed inset-0 bg-[url(https://www.transparenttextures.com/patterns/dark-matter.png)] opacity-25 z-0 pointer-events-none" />
+    <div className="min-h-screen bg-[#07060B] text-[#F5EFE6] font-sans relative selection:bg-[#D4AF37]/30 selection:text-white pb-24">
+      {/* Background Glow */}
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(212,175,55,0.08),_#07060B_65%)] z-0 pointer-events-none" />
+
+      <HuyenCoHeader user={user} subtitle="Tinh Bàn Tử Vi Đẩu Số 12 Cung" />
 
       <div className="max-w-6xl mx-auto px-4 pt-8 relative z-10">
-        
-        {/* ============================================================== */}
-        {/* HEADER BAR */}
-        {/* ============================================================== */}
-        <header className="flex justify-between items-center mb-8 border-b border-slate-800 pb-4">
-          {viewMode === "dashboard" ? (
-            <Link href="/huyen-co" className="flex items-center gap-2 text-indigo-300 hover:text-white transition-colors text-sm font-semibold">
-              <span>⬅️</span> Về Trang Chủ
-            </Link>
-          ) : (
+        {viewMode !== "dashboard" && (
+          <div className="mb-6">
             <button
               onClick={() => {
                 setViewMode("dashboard");
                 setSelectedHouse(null);
               }}
-              className="flex items-center gap-2 text-indigo-300 hover:text-white transition-colors text-sm font-semibold"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#120F1D] border border-[#D4AF37]/30 text-[#E8C96A] hover:bg-[#181426] transition-colors text-xs font-bold uppercase tracking-wider"
             >
-              <span>⬅️</span> Quay Lại Dashboard
+              <span>←</span> Quay Lại Sa Bàn Chính
             </button>
-          )}
-
-          <div className="text-right">
-            <h1 className="text-xl font-black text-[#fcd34d] tracking-[3px] uppercase font-serif">HUYỀN CƠ</h1>
-            <p className="text-[9px] text-slate-400 uppercase tracking-[2px] mt-0.5">Energy Birth Chart</p>
           </div>
-        </header>
+        )}
 
         {/* ============================================================== */}
         {/* VIEW: DASHBOARD */}
@@ -407,8 +432,15 @@ export default function LasoTuviPage() {
           <div className="space-y-10">
             {/* Upper Header Welcome */}
             <div className="text-center md:text-left">
-              <h2 className="text-2xl md:text-3xl font-bold font-serif text-white tracking-wide">Sa Bàn Năng Lượng Mệnh Lý</h2>
-              <p className="text-slate-400 text-sm mt-1">Quản lý bản đồ năng lượng chính chủ và xem hộ người thân</p>
+              <span className="text-[11px] uppercase tracking-[0.22em] text-[#C5B386] font-semibold block mb-1.5">
+                Tinh Bàn Đẩu Số • 12 Cung Vị
+              </span>
+              <h2 className="text-2xl md:text-3xl font-bold font-serif hc-gold-gradient-text tracking-wide">
+                Sa Bàn Năng Lượng Mệnh Lý
+              </h2>
+              <p className="text-[#9E9482] text-sm mt-1">
+                An định bản đồ năng lượng chính chủ và lưu trữ lá số người thân để tham vấn chuyên sâu
+              </p>
             </div>
 
             {/* Main Primary Chart Container */}
@@ -416,92 +448,99 @@ export default function LasoTuviPage() {
               
               {/* Left Column: Primary Chart Card */}
               <div className="lg:col-span-2">
-                <h3 className="text-xs font-black uppercase text-[#22d3ee] tracking-widest mb-3">🧭 Hồ Sơ Năng Lượng Chính Chủ</h3>
+                <h3 className="text-[11px] font-bold uppercase text-[#E8C96A] tracking-[0.2em] mb-3">
+                  ✦ Hồ Sơ Năng Lượng Chính Chủ
+                </h3>
                 
                 {loadingList ? (
-                  <div className="bg-[#121826]/70 border border-slate-800 rounded-3xl p-12 flex flex-col items-center justify-center min-h-[220px]">
-                    <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
-                    <p className="text-xs text-slate-400 uppercase tracking-wider animate-pulse">Đang nạp dữ liệu lá số...</p>
+                  <div className="hc-card rounded-3xl p-12 flex flex-col items-center justify-center min-h-[220px]">
+                    <div className="w-8 h-8 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-xs text-[#C5B386] uppercase tracking-wider animate-pulse">Đang nạp dữ liệu tinh bàn...</p>
                   </div>
                 ) : primaryChart ? (
-                  /* Premium Gradient Parchment Box */
-                  <div className="relative overflow-hidden bg-gradient-to-br from-[#2e155c] via-[#111625] to-[#0f111a] border border-[#d4af37]/30 rounded-3xl p-6 md:p-8 shadow-2xl">
-                    <div className="absolute top-0 right-0 w-48 h-48 bg-[#d4af37]/5 rounded-full blur-3xl pointer-events-none" />
+                  /* Premium Silk & Gold Box */
+                  <div className="relative overflow-hidden hc-card rounded-3xl p-6 md:p-8 shadow-2xl">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none" />
                     
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-800/80">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-[#D4AF37]/15">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 bg-[#d4af37]/20 border border-[#d4af37]/30 text-[#fcd34d] text-[10px] font-black uppercase rounded">Bản Thân</span>
-                          <span className="text-slate-400 text-xs">{primaryChart.gender === "female" ? "Nữ Mệnh" : "Nam Mệnh"}</span>
+                          <span className="px-2.5 py-0.5 bg-[#D4AF37]/15 border border-[#D4AF37]/35 text-[#E8C96A] text-[10px] font-bold uppercase rounded-full tracking-wider">
+                            Bản Thân
+                          </span>
+                          <span className="text-[#9E9482] text-xs">{primaryChart.gender === "female" ? "Nữ Mệnh" : "Nam Mệnh"}</span>
                         </div>
-                        <h4 className="text-3xl font-black font-serif text-white tracking-wide mt-1.5 capitalize">{primaryChart.ownerName}</h4>
-                        <p className="text-sm text-slate-400 mt-1 font-mono">
+                        <h4 className="text-3xl font-bold font-serif text-[#F5EFE6] tracking-wide mt-2 capitalize">{primaryChart.ownerName}</h4>
+                        <p className="text-sm text-[#C5B386] mt-1 font-mono">
                           Dương Lịch: {primaryChart.chartData?.extra?.solar_date || new Date(primaryChart.birthDate).toLocaleDateString("vi-VN")}
                         </p>
                         {primaryChart.chartData?.extra?.lunar_date && (
-                          <p className="text-xs text-[#d4af37]/80 mt-0.5">
+                          <p className="text-xs text-[#E8C96A]/80 mt-0.5">
                             Âm Lịch: {primaryChart.chartData.extra.lunar_date}
                           </p>
                         )}
                       </div>
 
-                      <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                      <div className="flex flex-wrap gap-2.5 w-full md:w-auto">
                         <button
                           onClick={() => {
                             router.push(`/huyen-co/laso/result?id=${primaryChart.id}`);
                           }}
-                          className="flex-1 md:flex-none px-6 py-3 bg-[#d4af37] text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-yellow-400 transition-all text-center shadow-lg shadow-yellow-500/10"
+                          className="flex-1 md:flex-none px-6 py-3 hc-gold-btn font-bold rounded-xl text-xs uppercase tracking-wider text-center"
                         >
                           Xem Sa Bàn
                         </button>
                         <button
                           onClick={() => handleStartChat(primaryChart)}
-                          className="flex-1 md:flex-none px-6 py-3 bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/20 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
+                          className="flex-1 md:flex-none px-5 py-3 bg-[#181426] hover:bg-[#D4AF37]/20 border border-[#D4AF37]/40 text-[#E8C96A] font-bold rounded-xl text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
                         >
-                          <span>🔮</span> Chat AI
+                          <AICoachOracleIcon className="w-4 h-4" />
+                          <span>Tham Vấn AI</span>
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6">
-                      <div className="bg-slate-900/50 border border-slate-800/60 p-3 rounded-2xl text-center">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold tracking-wider block">Thiên Can Địa Chi</span>
-                        <span className="text-sm font-bold text-slate-300 mt-1 block">{primaryChart.chartData?.extra?.stem_branch?.year || "--"}</span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 pt-6">
+                      <div className="bg-[#07060B]/70 border border-[#D4AF37]/15 p-3.5 rounded-2xl text-center">
+                        <span className="text-[10px] uppercase text-[#9E9482] font-bold tracking-wider block">Can Chi</span>
+                        <span className="text-sm font-bold text-[#F5EFE6] mt-1 block">{primaryChart.chartData?.extra?.stem_branch?.year || "--"}</span>
                       </div>
-                      <div className="bg-slate-900/50 border border-slate-800/60 p-3 rounded-2xl text-center">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold tracking-wider block">Giờ Sinh</span>
-                        <span className="text-sm font-bold text-slate-300 mt-1 block">{primaryChart.chartData?.extra?.hour || "--"}</span>
+                      <div className="bg-[#07060B]/70 border border-[#D4AF37]/15 p-3.5 rounded-2xl text-center">
+                        <span className="text-[10px] uppercase text-[#9E9482] font-bold tracking-wider block">Giờ Sinh</span>
+                        <span className="text-sm font-bold text-[#F5EFE6] mt-1 block">{primaryChart.chartData?.extra?.hour || "--"}</span>
                       </div>
-                      <div className="bg-slate-900/50 border border-slate-800/60 p-3 rounded-2xl text-center">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold tracking-wider block">Cục Số</span>
-                        <span className="text-sm font-bold text-blue-400 mt-1 block truncate px-1">{primaryChart.chartData?.extra?.cuc || "--"}</span>
+                      <div className="bg-[#07060B]/70 border border-[#D4AF37]/15 p-3.5 rounded-2xl text-center">
+                        <span className="text-[10px] uppercase text-[#9E9482] font-bold tracking-wider block">Cục Số</span>
+                        <span className="text-sm font-bold text-[#E8C96A] mt-1 block truncate px-1">{primaryChart.chartData?.extra?.cuc || "--"}</span>
                       </div>
-                      <div className="bg-slate-900/50 border border-slate-800/60 p-3 rounded-2xl text-center">
-                        <span className="text-[10px] uppercase text-slate-500 font-bold tracking-wider block">Bản Mệnh</span>
-                        <span className="text-sm font-bold text-emerald-400 mt-1 block truncate px-1">{primaryChart.chartData?.extra?.menh || "--"}</span>
+                      <div className="bg-[#07060B]/70 border border-[#D4AF37]/15 p-3.5 rounded-2xl text-center">
+                        <span className="text-[10px] uppercase text-[#9E9482] font-bold tracking-wider block">Bản Mệnh</span>
+                        <span className="text-sm font-bold text-[#52B788] mt-1 block truncate px-1">{primaryChart.chartData?.extra?.menh || "--"}</span>
                       </div>
                     </div>
 
                     {primaryChart.chartData?.extra?.cuc_description && (
-                      <div className="mt-6 p-4 bg-slate-950/40 border border-slate-800/50 rounded-2xl">
-                        <span className="text-[10px] uppercase text-[#d4af37] font-bold tracking-wider block mb-1">Mô tả năng lượng</span>
-                        <p className="text-xs text-slate-300 leading-5 line-clamp-3">{primaryChart.chartData.extra.cuc_description}</p>
+                      <div className="mt-6 p-4 bg-[#07060B]/60 border border-[#D4AF37]/20 rounded-2xl">
+                        <span className="text-[10px] uppercase text-[#E8C96A] font-bold tracking-wider block mb-1">Mô tả cục mệnh</span>
+                        <p className="text-xs text-[#E5DEC9] leading-5 line-clamp-3">{primaryChart.chartData.extra.cuc_description}</p>
                       </div>
                     )}
                   </div>
                 ) : (
                   /* Empty state for Primary Chart */
-                  <div className="bg-[#121826]/70 border-2 border-dashed border-slate-800 rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[260px] backdrop-blur-sm">
-                    <span className="text-5xl block mb-4 animate-pulse">🌌</span>
-                    <h4 className="text-lg font-bold text-white uppercase tracking-wider">Chưa Khởi Tạo Bản Đồ Bản Thân</h4>
-                    <p className="text-xs text-slate-400 max-w-sm mt-2 leading-relaxed">
-                      Thiết lập bản đồ năng lượng cá nhân để an định bản mệnh và bắt đầu tham vấn với Cố vấn mệnh lý AI.
+                  <div className="hc-card border-dashed rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[260px]">
+                    <div className="w-16 h-16 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center text-[#E8C96A] mb-4">
+                      <TuViAstrolabeIcon className="w-9 h-9" />
+                    </div>
+                    <h4 className="text-xl font-bold font-serif text-[#F5EFE6] uppercase tracking-wider">Chưa Khởi Tạo Bản Đồ Bản Thân</h4>
+                    <p className="text-xs text-[#9E9482] max-w-sm mt-2 leading-relaxed">
+                      Thiết lập bản đồ năng lượng cá nhân để an định 12 cung mệnh và bắt đầu tham vấn với Cố Vấn Mệnh Lý AI.
                     </p>
                     <button
                       onClick={() => handleOpenForm("self")}
-                      className="mt-6 px-8 py-3.5 bg-[#d4af37] text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider hover:bg-yellow-400 transition-all shadow-[0_0_20px_rgba(212,175,55,0.2)]"
+                      className="mt-6 px-8 py-3.5 hc-gold-btn font-bold rounded-xl text-xs uppercase tracking-wider"
                     >
-                      Thiết Lập Ngay
+                      Thiết Lập Tinh Bàn Ngay
                     </button>
                   </div>
                 )}
@@ -509,7 +548,9 @@ export default function LasoTuviPage() {
 
               {/* Right Column: Actions Sidebar */}
               <div>
-                <h3 className="text-xs font-black uppercase text-[#22d3ee] tracking-widest mb-3">🧭 Tính Năng Khai Vấn</h3>
+                <h3 className="text-[11px] font-bold uppercase text-[#E8C96A] tracking-[0.2em] mb-3">
+                  ✦ Tiện Ích Khai Vấn
+                </h3>
                 <div className="space-y-3">
                   <button
                     onClick={() => {
@@ -519,35 +560,41 @@ export default function LasoTuviPage() {
                         handleOpenForm("self");
                       }
                     }}
-                    className="w-full p-4 bg-[#121826]/80 hover:bg-[#1b2336] border border-slate-800 rounded-2xl text-left transition-all flex items-center justify-between group"
+                    className="w-full p-4 hc-card hc-card-hover rounded-2xl text-left transition-all flex items-center justify-between group"
                   >
                     <div>
-                      <h4 className="text-sm font-bold text-white group-hover:text-[#fcd34d] transition-colors uppercase tracking-wider">🗓️ Luận Giải Năm mới</h4>
-                      <p className="text-[11px] text-slate-400 mt-1">Dự phóng đại hạn, tiểu hạn chi tiết năm nay</p>
+                      <h4 className="text-sm font-bold text-[#F5EFE6] group-hover:text-[#E8C96A] transition-colors uppercase tracking-wider">
+                        Luận Giải Lưu Niên & Đại Vận
+                      </h4>
+                      <p className="text-[11px] text-[#9E9482] mt-1">Dự phóng đại hạn 10 năm và tiểu hạn chi tiết năm nay</p>
                     </div>
-                    <span className="text-slate-500 group-hover:text-white transition-colors">➡️</span>
+                    <span className="text-[#C5B386] group-hover:translate-x-1 transition-transform">→</span>
                   </button>
 
                   <button
                     onClick={() => handleOpenForm("guest")}
-                    className="w-full p-4 bg-[#121826]/80 hover:bg-[#1b2336] border border-slate-800 rounded-2xl text-left transition-all flex items-center justify-between group"
+                    className="w-full p-4 hc-card hc-card-hover rounded-2xl text-left transition-all flex items-center justify-between group"
                   >
                     <div>
-                      <h4 className="text-sm font-bold text-white group-hover:text-[#fcd34d] transition-colors uppercase tracking-wider">👥 Thêm Bản Đồ (Xem Hộ)</h4>
-                      <p className="text-[11px] text-slate-400 mt-1">Xem lá số và chat AI cho người thân/bạn bè</p>
+                      <h4 className="text-sm font-bold text-[#F5EFE6] group-hover:text-[#E8C96A] transition-colors uppercase tracking-wider">
+                        Lập Lá Số Xem Hộ
+                      </h4>
+                      <p className="text-[11px] text-[#9E9482] mt-1">An sao lá số và tham vấn AI cho người thân hoặc đối tác</p>
                     </div>
-                    <span className="text-slate-500 group-hover:text-white transition-colors">➡️</span>
+                    <span className="text-[#C5B386] group-hover:translate-x-1 transition-transform">+</span>
                   </button>
 
                   <Link
                     href="/huyen-co/chat"
-                    className="w-full p-4 bg-[#121826]/80 hover:bg-[#1b2336] border border-slate-800 rounded-2xl text-left transition-all flex items-center justify-between group block"
+                    className="w-full p-4 hc-card hc-card-hover rounded-2xl text-left transition-all flex items-center justify-between group block"
                   >
                     <div>
-                      <h4 className="text-sm font-bold text-white group-hover:text-[#fcd34d] transition-colors uppercase tracking-wider">💬 Lịch Sử Khai Vấn</h4>
-                      <p className="text-[11px] text-slate-400 mt-1">Xem lại các đoạn hội thoại tư vấn tử vi với AI</p>
+                      <h4 className="text-sm font-bold text-[#F5EFE6] group-hover:text-[#E8C96A] transition-colors uppercase tracking-wider">
+                        Phòng Vấn Đáp Cố Vấn AI
+                      </h4>
+                      <p className="text-[11px] text-[#9E9482] mt-1">Đối thoại trực tiếp về Sự Nghiệp, Tài Lộc, Tình Duyên</p>
                     </div>
-                    <span className="text-slate-500 group-hover:text-white transition-colors">➡️</span>
+                    <span className="text-[#C5B386] group-hover:translate-x-1 transition-transform">→</span>
                   </Link>
                 </div>
               </div>
@@ -556,12 +603,14 @@ export default function LasoTuviPage() {
 
             {/* Hồ Sơ Liên Kết Section */}
             <div>
-              <h3 className="text-xs font-black uppercase text-[#22d3ee] tracking-widest mb-4">👥 Hồ Sơ Liên Kết (Xem Hộ)</h3>
+              <h3 className="text-[11px] font-bold uppercase text-[#E8C96A] tracking-[0.2em] mb-4">
+                ✦ Hồ Sơ Liên Kết (Xem Hộ Người Thân)
+              </h3>
               
               {loadingList ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[1, 2, 3].map((n) => (
-                    <div key={n} className="bg-[#121826]/40 border border-slate-800/60 rounded-2xl h-32 animate-pulse" />
+                    <div key={n} className="hc-card rounded-2xl h-32 animate-pulse" />
                   ))}
                 </div>
               ) : guestCharts.length > 0 ? (
@@ -571,34 +620,34 @@ export default function LasoTuviPage() {
                     return (
                       <div
                         key={chart.id}
-                        className="bg-[#121826]/85 border border-slate-800/80 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between min-h-[140px] shadow-lg hover:shadow-xl transition-all"
+                        className="hc-card hc-card-hover rounded-2xl p-5 flex flex-col justify-between min-h-[150px] transition-all"
                       >
                         <div>
                           <div className="flex justify-between items-start">
-                            <span className="text-xs text-indigo-300 font-bold uppercase tracking-wider">
-                              {chart.gender === "female" ? "♀️ Nữ" : "♂️ Nam"}
+                            <span className="text-[11px] text-[#C5B386] font-bold uppercase tracking-wider">
+                              {chart.gender === "female" ? "Nữ Mệnh" : "Nam Mệnh"}
                             </span>
-                            <span className="text-[10px] text-slate-500 font-mono">ID: #{chart.id}</span>
+                            <span className="text-[10px] text-[#9E9482] font-mono">#{chart.id}</span>
                           </div>
-                          <h4 className="text-lg font-black text-white font-serif tracking-wide mt-1.5 capitalize truncate">{chart.ownerName}</h4>
-                          <p className="text-xs text-slate-400 mt-1 font-mono">{extra.solar_date || new Date(chart.birthDate).toLocaleDateString("vi-VN")}</p>
-                          <p className="text-[11px] text-[#d4af37]/80 mt-0.5">Giờ: {extra.hour || getChiName(chart.birthHour)}</p>
+                          <h4 className="text-xl font-bold text-[#F5EFE6] font-serif tracking-wide mt-1.5 capitalize truncate">{chart.ownerName}</h4>
+                          <p className="text-xs text-[#9E9482] mt-1 font-mono">{extra.solar_date || new Date(chart.birthDate).toLocaleDateString("vi-VN")}</p>
+                          <p className="text-[11px] text-[#E8C96A]/90 mt-0.5">Giờ: {extra.hour || getChiName(chart.birthHour)}</p>
                         </div>
 
-                        <div className="flex gap-2 mt-4 pt-3 border-t border-slate-800/60">
+                        <div className="flex gap-2 mt-4 pt-3 border-t border-[#D4AF37]/15">
                           <button
                             onClick={() => {
                               router.push(`/huyen-co/laso/result?id=${chart.id}`);
                             }}
-                            className="flex-1 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-850 rounded-lg text-xs font-semibold text-slate-200 transition-colors uppercase tracking-wider"
+                            className="flex-1 py-2 bg-[#07060B] hover:bg-[#181426] border border-[#D4AF37]/25 rounded-xl text-xs font-semibold text-[#F5EFE6] transition-colors uppercase tracking-wider"
                           >
-                            Chi Tiết
+                            Tinh Bàn
                           </button>
                           <button
                             onClick={() => handleStartChat(chart)}
-                            className="px-3 py-2 bg-[#8b5cf6]/20 border border-[#8b5cf6]/40 hover:bg-[#8b5cf6]/35 rounded-lg text-xs font-semibold text-indigo-300 transition-all flex items-center gap-1"
+                            className="px-3.5 py-2 bg-[#D4AF37]/15 border border-[#D4AF37]/40 hover:bg-[#D4AF37] hover:text-[#07060B] rounded-xl text-xs font-bold text-[#E8C96A] transition-all flex items-center gap-1.5"
                           >
-                            <span>🔮</span> Hỏi AI
+                            <span>Hỏi AI</span>
                           </button>
                         </div>
                       </div>
@@ -606,8 +655,8 @@ export default function LasoTuviPage() {
                   })}
                 </div>
               ) : (
-                <div className="bg-[#121826]/40 border border-slate-800/60 rounded-2xl p-8 text-center text-slate-400 text-xs">
-                  Chưa có hồ sơ xem hộ nào được lập. Nhấn vào &quot;Thêm Bản Đồ&quot; ở trên để lập lá số cho người khác.
+                <div className="hc-card rounded-2xl p-8 text-center text-[#9E9482] text-xs">
+                  Chưa có hồ sơ xem hộ nào được lập. Nhấn vào &quot;Lập Lá Số Xem Hộ&quot; ở trên để an sao cho người thân.
                 </div>
               )}
             </div>
@@ -619,22 +668,22 @@ export default function LasoTuviPage() {
         {/* VIEW: FORM */}
         {/* ============================================================== */}
         {viewMode === "form" && (
-          <div className="max-w-xl mx-auto bg-[#121826]/90 border border-indigo-500/25 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md relative">
-            <div className="absolute top-4 right-4 text-xs font-mono text-slate-500">
+          <div className="max-w-xl mx-auto hc-card rounded-3xl p-6 sm:p-8 shadow-2xl relative">
+            <div className="absolute top-5 right-5 text-[11px] font-semibold uppercase tracking-wider text-[#C5B386]">
               {formMode === "self" ? "Chính chủ" : "Xem hộ"}
             </div>
             
             <div className="text-center mb-6">
-              <span className="text-5xl block mb-3 animate-bounce">
-                {formMode === "self" ? "🔮" : "👤"}
-              </span>
-              <h2 className="text-2xl font-bold font-serif uppercase tracking-wider text-white">
-                {formMode === "self" ? "Lập Bản Đồ Bản Thân" : "Gieo Lá Số Cho Người Khác"}
+              <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center text-[#E8C96A]">
+                <TuViAstrolabeIcon className="w-8 h-8" />
+              </div>
+              <h2 className="text-2xl font-bold font-serif uppercase tracking-wider hc-gold-gradient-text">
+                {formMode === "self" ? "Lập Tinh Bàn Bản Thân" : "An Sao Lá Số Xem Hộ"}
               </h2>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-[#9E9482] mt-1 max-w-sm mx-auto leading-relaxed">
                 {formMode === "self" 
-                  ? "Nhập ngày giờ sinh chính xác của bạn để cấu hình hồ sơ năng lượng gốc." 
-                  : "Nhập thông tin người thân/bạn bè để phân tích vận hạn và tham vấn AI."}
+                  ? "Nhập ngày giờ sinh chính xác của bạn để an định 12 cung mệnh lý." 
+                  : "Nhập thông tin người thân/đối tác để phân tích vận hạn và tham vấn AI."}
               </p>
             </div>
 
@@ -648,7 +697,7 @@ export default function LasoTuviPage() {
                   placeholder="Nhập họ và tên đầy đủ"
                   value={formData.ownerName}
                   onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#090514] border border-slate-800 focus:border-[#d4af37]/60 rounded-xl outline-none text-sm text-white transition-all font-medium"
+                  className="w-full px-4 py-3 bg-[#090514] border border-slate-800 focus:border-[#d4af37]/60 rounded-xl outline-none text-base sm:text-sm text-white transition-all font-medium"
                 />
               </div>
 
@@ -690,7 +739,7 @@ export default function LasoTuviPage() {
                   <select
                     value={formData.birthHour}
                     onChange={(e) => setFormData({ ...formData, birthHour: Number(e.target.value) })}
-                    className="w-full px-4 py-2.5 bg-[#090514] border border-slate-800 focus:border-[#d4af37]/60 rounded-xl outline-none text-sm text-white transition-all font-medium h-[42px]"
+                    className="w-full px-4 py-2.5 bg-[#090514] border border-slate-800 focus:border-[#d4af37]/60 rounded-xl outline-none text-base sm:text-sm text-white transition-all font-medium h-[42px]"
                   >
                     {HOUR_BRANCHES.map((c) => (
                       <option key={c.value} value={c.value} className="bg-slate-950">
@@ -703,13 +752,11 @@ export default function LasoTuviPage() {
 
               <div>
                 <label className="block text-xs uppercase tracking-widest text-indigo-300 font-bold mb-1.5">
-                  Ngày Sinh (Dương Lịch)
+                  Ngày Sinh (Dương Lịch - Cuộn lên / xuống)
                 </label>
-                <input
-                  type="date"
+                <RollDatePicker
                   value={formData.birthDate}
-                  onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#090514] border border-slate-800 focus:border-[#d4af37]/60 rounded-xl outline-none text-sm text-white transition-all font-mono font-medium"
+                  onChange={(val) => setFormData({ ...formData, birthDate: val })}
                 />
               </div>
 
@@ -822,19 +869,19 @@ export default function LasoTuviPage() {
                         {/* Tuần/Triệt Indicator corners */}
                         <div className="absolute top-0 left-0 right-0 flex justify-between z-10">
                           {house.tuan_trung && (
-                            <span className="bg-purple-900/90 text-purple-200 text-[7px] px-1 py-0.5 rounded-br font-extrabold uppercase">T.Trung</span>
+                            <span className="bg-purple-900/95 text-purple-100 text-[9px] px-1.5 py-0.5 rounded-br font-extrabold uppercase">T.Trung</span>
                           )}
                           {house.triet_lo && (
-                            <span className="bg-red-900/90 text-red-200 text-[7px] px-1 py-0.5 rounded-bl ml-auto font-extrabold uppercase">Triệt</span>
+                            <span className="bg-red-900/95 text-red-100 text-[9px] px-1.5 py-0.5 rounded-bl ml-auto font-extrabold uppercase">Triệt</span>
                           )}
                         </div>
 
                         {/* Cell Header */}
-                        <div className="flex justify-between items-center border-b border-slate-800 pb-0.5 mb-1.5 w-full mt-2 select-none">
-                          <span className={`text-[10px] font-black uppercase tracking-wider ${isMenh ? "text-[#d4af37]" : isThan ? "text-blue-400" : "text-slate-200"}`}>
-                            {house.name} {isThan && <span className="text-[8px] text-blue-400">(Thân)</span>}
+                        <div className="flex justify-between items-center border-b border-slate-700/80 pb-1 mb-1.5 w-full mt-2 select-none">
+                          <span className={`text-xs font-black uppercase tracking-wider ${isMenh ? "text-[#d4af37]" : isThan ? "text-blue-400" : "text-slate-100"}`}>
+                            {house.name} {isThan && <span className="text-[10px] text-blue-300">(Thân)</span>}
                           </span>
-                          <span className="text-[8px] text-slate-500 font-bold uppercase">{cell.branch}</span>
+                          <span className="text-[10px] text-slate-300 font-bold uppercase">{cell.branch}</span>
                         </div>
 
                         {/* Main Stars Column */}
@@ -844,36 +891,36 @@ export default function LasoTuviPage() {
                               <div
                                 key={idx}
                                 style={{ color: getElementColor(s.element) }}
-                                className="text-[10px] font-extrabold tracking-wide truncate leading-tight"
+                                className="text-xs font-extrabold tracking-wide truncate leading-tight"
                               >
-                                {s.name} {s.strength && <span className="text-[8px] opacity-70">({s.strength})</span>}
+                                {s.name} {s.strength && <span className="text-[10px] opacity-90">({s.strength})</span>}
                               </div>
                             ))
                           ) : (
-                            <div className="text-[9px] text-slate-600 italic select-none">Vô Chính Diệu</div>
+                            <div className="text-[11px] text-slate-400 italic select-none">Vô Chính Diệu</div>
                           )}
                         </div>
 
                         {/* Minor Stars compact list */}
-                        <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 my-1.5 w-full max-h-[22px] overflow-hidden">
-                          {subStars.slice(0, 4).map((s, idx) => (
+                        <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 my-1.5 w-full max-h-[38px] overflow-hidden">
+                          {subStars.slice(0, 6).map((s, idx) => (
                             <span
                               key={idx}
                               style={{ color: getElementColor(s.element) }}
-                              className="text-[8px] opacity-80 font-medium whitespace-nowrap truncate max-w-[45px]"
+                              className="text-[10px] opacity-95 font-semibold whitespace-nowrap"
                             >
                               {s.name}
                             </span>
                           ))}
-                          {subStars.length > 4 && (
-                            <span className="text-[7px] text-slate-500 font-bold">+{subStars.length - 4}</span>
+                          {subStars.length > 6 && (
+                            <span className="text-[9px] text-slate-300 font-bold">+{subStars.length - 6}</span>
                           )}
                         </div>
 
                         {/* Cell Footer */}
-                        <div className="flex justify-between items-center border-t border-slate-800/60 pt-0.5 w-full mt-auto select-none">
-                          <span className="text-[8px] text-red-400 font-extrabold">{house.major_period || ""}</span>
-                          <span className="text-[7px] text-slate-500 uppercase">{house.element}</span>
+                        <div className="flex justify-between items-center border-t border-slate-700/70 pt-1 w-full mt-auto select-none">
+                          <span className="text-[10px] text-red-400 font-extrabold">{house.major_period || ""}</span>
+                          <span className="text-[9.5px] text-slate-300 font-semibold uppercase">{house.element}</span>
                         </div>
 
                         {/* Zoom overlay symbol */}

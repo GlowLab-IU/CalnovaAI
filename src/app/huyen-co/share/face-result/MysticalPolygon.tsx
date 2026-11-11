@@ -2,7 +2,6 @@
 
 import React, { useMemo } from "react";
 
-// --- Custom Web SVG Icons ---
 interface IconProps {
   color: string;
   size?: number;
@@ -11,7 +10,7 @@ interface IconProps {
 const defaultSize = 20;
 
 export const IconEyes = ({ color, size = defaultSize }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
     <circle cx="12" cy="12" r="3" strokeWidth="2" />
   </svg>
@@ -19,86 +18,86 @@ export const IconEyes = ({ color, size = defaultSize }: IconProps) => (
 
 export const IconEyebrows = ({ color, size = defaultSize }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 11c0-2.5 2-4 5-4s5 1.5 5 4" />
-    <path d="M14 11c0-2.5 2-4 5-4s5 1.5 5 4" />
+    <path d="M3 11c1.5-3 4.5-4 8-2.5" />
+    <path d="M13 8.5c3.5-1.5 6.5-.5 8 2.5" />
+    <circle cx="7" cy="14" r="1.2" fill={color} stroke="none" opacity="0.65" />
+    <circle cx="17" cy="14" r="1.2" fill={color} stroke="none" opacity="0.65" />
   </svg>
 );
 
 export const IconNose = ({ color, size = defaultSize }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 5v11" strokeWidth="2" />
-    <path d="M8 16a4 4 0 0 0 8 0" />
-    <path d="M10 18a2 2 0 0 1 4 0" opacity="0.6" />
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 4v11" strokeWidth="2" />
+    <path d="M7.5 15.5a4.5 4.5 0 0 0 9 0" />
+    <path d="M9.5 18a2.5 2.5 0 0 1 5 0" opacity="0.65" />
   </svg>
 );
 
 export const IconMouth = ({ color, size = defaultSize }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M7 10c2 1.5 6 1.5 10 0" />
-    <path d="M8 12c1.5 3 6.5 3 8 0" strokeWidth="2" />
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 11c2.5-2 5-2 7-0.5 2-1.5 4.5-1.5 7 0.5" />
+    <path d="M6 11.5c2 4 10 4 12 0" strokeWidth="1.8" />
   </svg>
 );
 
 export const IconForehead = ({ color, size = defaultSize }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 10a7 7 0 0 1 14 0" strokeWidth="2" />
-    <line x1="4" y1="14" x2="20" y2="14" opacity="0.4" strokeWidth="1" />
-    <path d="M9 6l3-2 3 2" opacity="0.6" />
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4.5 11a7.5 7.5 0 0 1 15 0" strokeWidth="2" />
+    <line x1="4" y1="15" x2="20" y2="15" opacity="0.45" strokeWidth="1.2" />
+    <circle cx="12" cy="8.5" r="1.6" fill={color} stroke="none" />
   </svg>
 );
 
 export const IconChin = ({ color, size = defaultSize }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="4" y1="8" x2="20" y2="8" opacity="0.4" strokeWidth="1" />
-    <path d="M5 12v3a7 7 0 0 0 14 0v-3" strokeWidth="2" />
-  </svg>
-);
-
-export const IconMidface = ({ color, size = defaultSize }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="4" x2="12" y2="20" strokeWidth="2" />
-    <line x1="8" y1="6" x2="16" y2="6" />
-    <line x1="9" y1="18" x2="15" y2="18" />
-    <circle cx="12" cy="12" r="1" fill={color} stroke="none" />
-  </svg>
-);
-
-export const IconPhiltrum = ({ color, size = defaultSize }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10 6a2 2 0 0 1 4 0" opacity="0.5"/>
-    <path d="M11 8v8" strokeWidth="2"/>
-    <path d="M13 8v8" strokeWidth="2"/>
-    <path d="M9 18c1 1 4 1 6 0" opacity="0.5"/>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="8" x2="19" y2="8" opacity="0.4" strokeWidth="1.2" />
+    <path d="M5 11.5v2.5a7 7 0 0 0 14 0v-2.5" strokeWidth="2" />
   </svg>
 );
 
 export const IconFaceOverview = ({ color, size = defaultSize }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="9" strokeWidth="2" />
-    <line x1="12" y1="3" x2="12" y2="21" opacity="0.5" />
-    <line x1="3" y1="12" x2="21" y2="12" opacity="0.5" />
-    <circle cx="12" cy="12" r="2" fill={color} stroke="none" opacity="0.8"/>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" strokeWidth="1.8" />
+    <path d="M12 3a4.5 4.5 0 0 1 0 9 4.5 4.5 0 0 0 0 9" strokeWidth="1.4" opacity="0.85" />
+    <circle cx="12" cy="7.5" r="1.3" fill={color} stroke="none" />
+    <circle cx="12" cy="16.5" r="1.3" fill={color} stroke="none" opacity="0.6" />
   </svg>
 );
 
-const ICON_SIZE = 24;
+const ICON_SIZE = 20;
 
-const getIcon = (key: string, color: string) => {
+export const getFeatureIcon = (key: string, color: string, size = ICON_SIZE) => {
   switch (key) {
-    case "intro": return <IconFaceOverview size={ICON_SIZE} color={color} />;
+    case "intro":
+      return <IconFaceOverview size={size} color={color} />;
     case "eye":
-    case "eyes": return <IconEyes size={ICON_SIZE} color={color} />;
+    case "eyes":
+      return <IconEyes size={size} color={color} />;
     case "eyebrow":
-    case "eyebrows": return <IconEyebrows size={ICON_SIZE} color={color} />;
-    case "nose": return <IconNose size={ICON_SIZE} color={color} />;
-    case "mouth": return <IconMouth size={ICON_SIZE} color={color} />;
-    case "forehead": return <IconForehead size={ICON_SIZE} color={color} />;
-    case "chin": return <IconChin size={ICON_SIZE} color={color} />;
-    case "midface": return <IconMidface size={ICON_SIZE} color={color} />;
-    case "lower_face": return <IconChin size={ICON_SIZE} color={color} />;
-    case "philtrum": return <IconPhiltrum size={ICON_SIZE} color={color} />;
-    default: return <IconFaceOverview size={ICON_SIZE} color={color} />;
+    case "eyebrows":
+      return <IconEyebrows size={size} color={color} />;
+    case "nose":
+      return <IconNose size={size} color={color} />;
+    case "mouth":
+      return <IconMouth size={size} color={color} />;
+    case "forehead":
+      return <IconForehead size={size} color={color} />;
+    case "chin":
+      return <IconChin size={size} color={color} />;
+    default:
+      return <IconFaceOverview size={size} color={color} />;
   }
+};
+
+const TRIGRAMS = ["☰", "☱", "☲", "☳", "☴", "☵", "☶", "☷"];
+
+const PALACE_SUBTITLES: Record<string, string> = {
+  forehead: "Quan Lộc",
+  eyebrows: "Bảo Thọ",
+  eyes: "Thần Khí",
+  nose: "Tài Bạch",
+  mouth: "Xuất Nạp",
+  chin: "Địa Các",
 };
 
 interface MysticalPolygonProps {
@@ -108,11 +107,11 @@ interface MysticalPolygonProps {
 }
 
 export default function MysticalPolygon({ items, onSelect, activeId }: MysticalPolygonProps) {
-  const WIDTH = 320;
+  const WIDTH = 300;
   const CENTER = WIDTH / 2;
-  const RADIUS = 110;
+  const RADIUS = 104;
 
-  const { polygonItems, introItem, points, polygonPoints } = useMemo(() => {
+  const { points, introItem, polygonPoints, octagonPoints, trigramCoords } = useMemo(() => {
     const pItems = items.filter((i) => i.id !== "intro");
     const iItem = items.find((i) => i.id === "intro");
     const count = pItems.length;
@@ -123,131 +122,227 @@ export default function MysticalPolygon({ items, onSelect, activeId }: MysticalP
       return {
         x: CENTER + RADIUS * Math.cos(angle),
         y: CENTER + RADIUS * Math.sin(angle),
-        item: item,
+        item,
       };
     });
 
     const polyPts = pts.map((p) => `${p.x},${p.y}`).join(" ");
-    return { polygonItems: pItems, introItem: iItem, points: pts, polygonPoints: polyPts };
-  }, [items]);
+
+    // Octagonal Bát Quái ring
+    const octR = RADIUS * 0.86;
+    const octPts = Array.from({ length: 8 }, (_, idx) => {
+      const a = (idx * Math.PI) / 4 - Math.PI / 2 + Math.PI / 8;
+      return `${CENTER + octR * Math.cos(a)},${CENTER + octR * Math.sin(a)}`;
+    }).join(" ");
+
+    // 8 Trigram symbols
+    const trigR = RADIUS * 0.67;
+    const tCoords = TRIGRAMS.map((sym, idx) => {
+      const a = (idx * Math.PI) / 4 - Math.PI / 2;
+      return {
+        sym,
+        x: CENTER + trigR * Math.cos(a),
+        y: CENTER + trigR * Math.sin(a),
+      };
+    });
+
+    return {
+      points: pts,
+      introItem: iItem,
+      polygonPoints: polyPts,
+      octagonPoints: octPts,
+      trigramCoords: tCoords,
+    };
+  }, [items, CENTER, RADIUS]);
 
   return (
-    <div 
+    <div
       className="relative mx-auto flex items-center justify-center select-none"
       style={{ width: WIDTH, height: WIDTH }}
     >
-      {/* Svg lines, background polygon and Bát Quái decorative rings */}
+      {/* Subtle radial golden aura */}
+      <div className="absolute inset-6 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.18)_0%,rgba(26,20,41,0.06)_65%,transparent_100%)] pointer-events-none" />
+
+      {/* Rotating Sacred Bát Quái SVG */}
       <svg height={WIDTH} width={WIDTH} className="absolute inset-0 pointer-events-none">
         <defs>
-          <radialGradient id="gradPoly" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#0891b2" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#0891b2" stopOpacity="0.05" />
+          <radialGradient id="gradBaguaPoly" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#E8C96A" stopOpacity="0.26" />
+            <stop offset="70%" stopColor="#D4AF37" stopOpacity="0.09" />
+            <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.02" />
           </radialGradient>
         </defs>
-        {/* Bát Quái decorative rings */}
-        <circle cx={CENTER} cy={CENTER} r={RADIUS * 0.38} stroke="#06b6d4" strokeWidth="0.8" strokeOpacity="0.2" fill="none" strokeDasharray="3,6" />
-        <circle cx={CENTER} cy={CENTER} r={RADIUS * 0.65} stroke="#06b6d4" strokeWidth="0.6" strokeOpacity="0.12" fill="none" />
-        <circle cx={CENTER} cy={CENTER} r={RADIUS * 0.95} stroke="#06b6d4" strokeWidth="0.5" strokeOpacity="0.08" fill="none" strokeDasharray="2,8" />
-        {/* Axis lines */}
-        <line x1={CENTER} y1={CENTER - RADIUS * 0.92} x2={CENTER} y2={CENTER + RADIUS * 0.92} stroke="#06b6d4" strokeWidth="0.5" strokeOpacity="0.1" />
-        <line x1={CENTER - RADIUS * 0.92} y1={CENTER} x2={CENTER + RADIUS * 0.92} y2={CENTER} stroke="#06b6d4" strokeWidth="0.5" strokeOpacity="0.1" />
+
+        {/* Outer compass ring */}
+        <circle
+          cx={CENTER}
+          cy={CENTER}
+          r={RADIUS * 1.03}
+          stroke="#D4AF37"
+          strokeWidth="0.9"
+          strokeOpacity="0.28"
+          fill="none"
+          strokeDasharray="3,5"
+        />
+
+        {/* Octagonal Bagua frame */}
+        <polygon
+          points={octagonPoints}
+          fill="none"
+          stroke="#E8C96A"
+          strokeWidth="1.1"
+          strokeOpacity="0.35"
+        />
+
+        {/* Inner sacred circles */}
+        <circle
+          cx={CENTER}
+          cy={CENTER}
+          r={RADIUS * 0.54}
+          stroke="#D4AF37"
+          strokeWidth="0.8"
+          strokeOpacity="0.3"
+          fill="none"
+        />
+        <circle
+          cx={CENTER}
+          cy={CENTER}
+          r={RADIUS * 0.34}
+          stroke="#E8C96A"
+          strokeWidth="0.8"
+          strokeOpacity="0.35"
+          fill="none"
+          strokeDasharray="2,4"
+        />
+
+        {/* 8 Trigram symbols */}
+        {trigramCoords.map((t, idx) => (
+          <text
+            key={`trig-${idx}`}
+            x={t.x}
+            y={t.y}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="#D4AF37"
+            fillOpacity="0.45"
+            fontSize="11"
+          >
+            {t.sym}
+          </text>
+        ))}
+
+        {/* Connecting hexagon/polygon between the 6 Ngũ Quan nodes */}
         {polygonPoints && (
-          <polygon 
-            points={polygonPoints} 
-            fill="url(#gradPoly)" 
-            stroke="#06b6d4" 
-            strokeWidth="2" 
-            strokeOpacity="0.8" 
-            className="transition-all duration-300"
+          <polygon
+            points={polygonPoints}
+            fill="url(#gradBaguaPoly)"
+            stroke="#E8C96A"
+            strokeWidth="1.5"
+            strokeOpacity="0.7"
           />
         )}
-        {points.map((p, i) => (
-          <line 
-            key={`line-${i}`} 
-            x1={CENTER} 
-            y1={CENTER} 
-            x2={p.x} 
-            y2={p.y} 
-            stroke="#06b6d4" 
-            strokeWidth="1.2" 
-            strokeOpacity="0.45" 
-            strokeDasharray="4,4" 
-          />
-        ))}
+
+        {/* Energy spokes from center to each node */}
+        {points.map((p, i) => {
+          const isNodeActive = activeId === p.item.id;
+          return (
+            <line
+              key={`line-${i}`}
+              x1={CENTER}
+              y1={CENTER}
+              x2={p.x}
+              y2={p.y}
+              stroke={isNodeActive ? "#FFF3C4" : "#D4AF37"}
+              strokeWidth={isNodeActive ? "1.8" : "1"}
+              strokeOpacity={isNodeActive ? "0.9" : "0.35"}
+              strokeDasharray={isNodeActive ? undefined : "4,4"}
+            />
+          );
+        })}
       </svg>
 
-
-      {/* Satellite Buttons */}
+      {/* Satellite Ngũ Quan Nodes */}
       {points.map((p) => {
         const isActive = activeId === p.item.id;
         const iconKey = p.item.rawKey || p.item.id;
+        const shortName = p.item.title.split("(")[0].trim();
+        const palaceSub = PALACE_SUBTITLES[iconKey] || "";
 
         return (
           <div
             key={p.item.id}
             className="absolute flex flex-col items-center justify-center"
             style={{
-              left: p.x - 24,
-              top: p.y - 24,
-              width: 48,
-              height: 48,
-              zIndex: 20,
+              left: p.x - 28,
+              top: p.y - 28,
+              width: 56,
+              height: 56,
+              zIndex: isActive ? 30 : 20,
             }}
           >
             <button
+              type="button"
               onClick={() => onSelect(p.item.id)}
-              className="group relative flex items-center justify-center focus:outline-none w-10 h-10 rounded-full transition-all duration-300 active:scale-95"
+              title={`Xem luận giải ${p.item.title}`}
+              className="group relative flex items-center justify-center focus:outline-none w-12 h-12 rounded-full transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer"
             >
-              {/* Pulsing ring animation for active node */}
+              {/* Active pulsing golden aura */}
               {isActive && (
-                <div className="absolute w-12 h-12 rounded-full bg-[#06b6d4]/30 animate-ping pointer-events-none" />
+                <div className="absolute w-13 h-13 rounded-full bg-[#D4AF37]/30 animate-ping pointer-events-none" />
               )}
 
-              <div 
-                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-300 shadow-md ${
-                  isActive 
-                    ? "bg-slate-900 border-[#06b6d4] shadow-[#06b6d4]/40" 
-                    : "bg-slate-800/90 border-[#06b6d4]/50 hover:bg-slate-700/90"
+              <div
+                className={`w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                  isActive
+                    ? "bg-gradient-to-b from-[#2A1F3D] to-[#161024] border-[#FFF3C4] shadow-[0_0_20px_rgba(232,201,106,0.65)] scale-105"
+                    : "bg-[#110D1B]/95 border-[#D4AF37]/50 hover:border-[#FFF3C4] shadow-[0_4px_14px_rgba(0,0,0,0.65)]"
                 }`}
               >
-                {getIcon(iconKey, isActive ? "#22D3EE" : "#e2e8f0")}
+                {getFeatureIcon(iconKey, isActive ? "#FFF3C4" : "#E8C96A", 20)}
               </div>
 
-              {/* Tag below the node */}
-              <span 
-                className={`absolute bottom-[-18px] text-[10px] uppercase tracking-wider font-extrabold whitespace-nowrap px-1.5 py-0.5 rounded transition-all ${
-                  isActive 
-                    ? "text-[#0891b2] font-black" 
-                    : "text-[#5C3E21] hover:text-[#8C6D53]"
+              {/* Label pill underneath node */}
+              <div
+                className={`absolute bottom-[-22px] flex items-center gap-1 text-[10px] uppercase tracking-wider whitespace-nowrap px-2.5 py-0.5 rounded-full border transition-all ${
+                  isActive
+                    ? "text-[#140F05] bg-gradient-to-r from-[#F3D88B] to-[#D4AF37] border-[#FFF3C4] font-extrabold shadow-[0_2px_10px_rgba(212,175,55,0.45)]"
+                    : "text-[#EFECE6] bg-[#0D0A16]/95 border-[#D4AF37]/35 group-hover:border-[#E8C96A] font-semibold"
                 }`}
               >
-                {p.item.title.split("(")[0]}
-              </span>
+                <span>{shortName}</span>
+                {palaceSub && (
+                  <span className={isActive ? "text-[#140F05]/80 font-bold" : "text-[#D4AF37] font-medium"}>
+                    • {palaceSub}
+                  </span>
+                )}
+              </div>
             </button>
           </div>
         );
       })}
 
-      {/* Center Overview Button */}
-      <div 
+      {/* Center Thái Cực / Tổng Quan Button */}
+      <div
         className="absolute z-30 flex items-center justify-center"
-        style={{ left: CENTER - 32, top: CENTER - 32 }}
+        style={{ left: CENTER - 34, top: CENTER - 34 }}
       >
         <button
+          type="button"
           onClick={() => introItem && onSelect(introItem.id)}
-          className={`w-16 h-16 rounded-full flex flex-col items-center justify-center border transition-all duration-300 shadow-lg ${
+          title="Xem Tổng Quan Diện Tướng & Tam Đình"
+          className={`w-[68px] h-[68px] rounded-full flex flex-col items-center justify-center border-2 transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
             activeId === "intro"
-              ? "bg-slate-900 border-[#06b6d4] shadow-[#06b6d4]/40"
-              : "bg-slate-800 border-[#06b6d4]/30 hover:border-[#06b6d4]/60"
+              ? "bg-gradient-to-b from-[#2A1F3D] to-[#140F21] border-[#FFF3C4] shadow-[0_0_25px_rgba(232,201,106,0.55)]"
+              : "bg-[#110D1B] border-[#D4AF37]/50 hover:border-[#FFF3C4] shadow-lg"
           }`}
         >
           {activeId === "intro" && (
-            <div className="absolute w-20 h-20 rounded-full bg-[#06b6d4]/10 animate-pulse pointer-events-none" />
+            <div className="absolute w-20 h-20 rounded-full bg-[#D4AF37]/15 animate-pulse pointer-events-none" />
           )}
-          {getIcon("intro", activeId === "intro" ? "#22D3EE" : "#e2e8f0")}
-          <span 
-            className="text-[8px] font-black tracking-widest mt-1 uppercase"
-            style={{ color: activeId === "intro" ? "#22D3EE" : "#e2e8f0" }}
+          {getFeatureIcon("intro", activeId === "intro" ? "#FFF3C4" : "#E8C96A", 22)}
+          <span
+            className="text-[9px] font-extrabold tracking-widest mt-1 uppercase"
+            style={{ color: activeId === "intro" ? "#FFF3C4" : "#E8C96A" }}
           >
             Tổng Quan
           </span>

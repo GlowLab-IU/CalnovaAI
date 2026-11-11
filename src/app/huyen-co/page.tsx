@@ -4,17 +4,42 @@ import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import AuthModal from "./AuthModal";
+import PricingModal from "./PricingModal";
+import HuyenCoHeader from "./components/HuyenCoHeader";
+import {
+  AUTH_CHANGE_EVENT,
+  clearStoredAuth,
+  getStoredAuth,
+  refreshAuthMe,
+  saveStoredAuth,
+} from "./utils/authSync";
+import {
+  DailyAlmanacModal,
+  DailyAlmanacCompactBar,
+} from "./components/DailyAlmanacWidget";
+import {
+  HuyenCoLogoIcon,
+  FacePhysiognomyIcon,
+  PalmReadingIcon,
+  FolkCardsIcon,
+  TuViAstrolabeIcon,
+  AICoachOracleIcon,
+  ScrollHistoryIcon,
+  SparkleIcon,
+  ShareSealIcon,
+} from "./components/HuyenCoIcons";
 
-// Subcomponent to safely call useSearchParams inside Suspense
-function QueryParamsTracker({ 
-  onRefCodeFound, 
-  onRedirectFound 
-}: { 
+function QueryParamsTracker({
+  onRefCodeFound,
+  onRedirectFound,
+  onPaymentFound,
+}: {
   onRefCodeFound: (code: string) => void;
   onRedirectFound: (path: string) => void;
+  onPaymentFound: (payment: string, orderCode?: string) => void;
 }) {
   const searchParams = useSearchParams();
-  
+
   useEffect(() => {
     const ref = searchParams?.get("ref");
     if (ref) {
@@ -31,75 +56,170 @@ function QueryParamsTracker({
     if (redirect) {
       onRedirectFound(redirect);
     }
-  }, [searchParams, onRefCodeFound, onRedirectFound]);
+    const payment = searchParams?.get("payment");
+    const orderCode = searchParams?.get("orderCode");
+    if (payment) {
+      onPaymentFound(payment, orderCode || undefined);
+    }
+  }, [searchParams, onRefCodeFound, onRedirectFound, onPaymentFound]);
 
   return null;
 }
+
+const SAMPLE_PREVIEWS = {
+  face: {
+    badge: "Bản Mẫu • Diện Tướng Học Cổ Truyền & Nhân Trắc AI",
+    title: "Hình Tướng Khuôn Mặt Trái Xoan — Tam Đình Cân Xứng (88%)",
+    metrics: [
+      { label: "Thượng Đình (Trán)", value: "Rộng sáng, Thiên Đình cao mở — Tư duy chiến lược sắc bén" },
+      { label: "Trung Đình (Mũi & Mắt)", value: "Sống mũi thẳng, Chuẩn đầu đầy — Tài bạch vững vàng" },
+      { label: "Hạ Đình (Miệng & Địa Các)", value: "Khóe miệng hướng thượng, cằm tròn đầy — Hậu vận viên mãn" },
+    ],
+    excerpt:
+      "Tổng thể diện tướng toát lên sự hài hòa giữa thần khí và cốt cách. Thượng đình mở rộng kết hợp cùng ánh mắt định tĩnh báo hiệu người có quý nhân nâng đỡ sớm trong sự nghiệp; từ trung vận (sau 32 tuổi) cung Tài Bạch và Điền Trạch phát vượng rõ rệt nhờ năng lực quản trị độc lập.",
+    ctaLabel: "Quét Diện Tướng Của Bạn",
+    ctaPath: "/huyen-co/face-scan",
+  },
+  cards: {
+    badge: "Bản Mẫu • Quẻ Bài Dân Gian 32 Lá (Quẻ Tam Đa)",
+    title: "Ách Cơ (Bổn Mạng) • Ách Rô (Gia Đạo) • Chín Bích (Tài Lộc)",
+    metrics: [
+      { label: "Điểm Cát/Hung", value: "6.8 / 10 — Cát Quẻ (Có cách cục Đôi Ách song hành)" },
+      { label: "Khí Sắc Âm Dương", value: "2 Đỏ (Cơ, Rô) – 1 Đen (Bích): Trong thử thách nảy sinh cơ hội lớn" },
+      { label: "Phép Luận Chuyển Hóa", value: "Thế 'Cát Hóa Giải Hung' — Quý nhân gia đạo đỡ cung Tài Lộc" },
+    ],
+    excerpt:
+      "Bộ Đôi Ách (Ách Cơ – Ách Rô) tại Bổn Mạng và Gia Đạo báo hiệu tin vui lớn về văn thư, hợp đồng hoặc sự hậu thuẫn từ gia đình. Dù lá Chín Bích tại cung Tài Lộc cho thấy bạn đang tự tạo áp lực tâm lý trước quyết định mới, cát khí từ hai lá Ách sẽ giúp tháo gỡ trọn vẹn mọi khúc mắc.",
+    ctaLabel: "Gieo Quẻ Bài 32 Lá Ngay",
+    ctaPath: "/huyen-co/boibai",
+  },
+  tuvi: {
+    badge: "Bản Mẫu • Tinh Bàn Tử Vi Đẩu Số 12 Cung",
+    title: "Mệnh Vũ Khúc Thiên Phủ Đồng Cung • Kim Tứ Cục",
+    metrics: [
+      { label: "Cung Mệnh (Thân Cư Tài)", value: "Vũ Khúc (Miếu) • Thiên Phủ (Miếu) • Lộc Tồn hội chiếu" },
+      { label: "Cung Quan Lộc", value: "Tử Vi • Thiên Tướng tọa thủ — Uy tín lãnh đạo và tổ chức" },
+      { label: "Cung Tài Bạch", value: "Liêm Trinh • Văn Xương — Dòng tiền bền vững, nhạy bén đầu tư" },
+    ],
+    excerpt:
+      "Cách cục Tử Phủ Vũ Tướng hội Lộc Tồn tạo nên nền tảng bản mệnh kiên định, trọng chữ tín và có biệt tài tích lũy tài sản. Trong đại vận hiện tại, việc kết hợp giữa chuyên môn sâu và mở rộng mạng lưới đối tác sẽ giúp bạn bứt phá mạnh mẽ cả về danh vị lẫn tài chính.",
+    ctaLabel: "Lập Lá Số Tử Vi Chính Chủ",
+    ctaPath: "/huyen-co/laso",
+  },
+};
 
 export default function HuyenCoPortal() {
   const router = useRouter();
   const [refCode, setRefCode] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
-  
+  const [sampleTab, setSampleTab] = useState<"face" | "cards" | "tuvi">("face");
+
   // Auth states
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState<boolean>(false);
+  const [isAlmanacModalOpen, setIsAlmanacModalOpen] = useState<boolean>(false);
   const [redirectPath, setRedirectPath] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
 
-  // Handle redirect param from URL on load
-  const handleRedirectFound = React.useCallback((path: string) => {
-    const storedToken = localStorage.getItem("authToken");
-    if (storedToken) {
-      // Already logged in, redirect immediately
-      router.push(path);
-    } else {
-      // Not logged in, save redirect path and open modal
-      setRedirectPath(path);
-      setIsAuthModalOpen(true);
-    }
-  }, [router]);
+  const handleRedirectFound = React.useCallback(
+    (path: string) => {
+      const storedToken = localStorage.getItem("authToken");
+      if (storedToken) {
+        router.push(path);
+      } else {
+        setRedirectPath(path);
+        setIsAuthModalOpen(true);
+      }
+    },
+    [router]
+  );
+
+  const handlePaymentFound = React.useCallback(
+    async (payment: string, orderCode?: string) => {
+      setPaymentStatus(payment);
+
+      if (payment === "success" && orderCode) {
+        try {
+          const baseUrl = "https://api.calnovaai.com/glowlab";
+
+          const res = await fetch(`${baseUrl}/payment/vietqr/verify?orderCode=${orderCode}`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+            },
+          });
+
+          const data = await res.json();
+          if ((data.code === 0 || data.code === "OPERATION_SUCCESS") && data.data && data.data.success) {
+            const storedToken = localStorage.getItem("authToken");
+            if (storedToken) {
+              const meUrl = "https://api.calnovaai.com/glowlab/auth/me";
+
+              const meRes = await fetch(meUrl, {
+                headers: { Authorization: `Bearer ${storedToken}` },
+              });
+              const userData = await meRes.json();
+              if (userData?.data) {
+                localStorage.setItem("authUser", JSON.stringify(userData.data));
+                setUser(userData.data);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Failed to verify orderCode:", err);
+        }
+      }
+
+      router.replace("/huyen-co");
+    },
+    [router]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const storedToken = localStorage.getItem("authToken");
-    const storedUser = localStorage.getItem("authUser");
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        
-        // Fetch fresh user profile to update credits
-        const meUrl = typeof window !== "undefined" && window.location.hostname.includes("calnovaai.com")
-          ? "https://api.calnovaai.com/glowlab/auth/me"
-          : "https://api.calnovaai.com/glowlab/auth/me";
-        fetch(meUrl, {
-          headers: {
-            "Authorization": `Bearer ${storedToken}`,
-          }
-        })
-          .then(res => res.json())
-          .then(result => {
-            if (result.code === 0 || result.code === "OPERATION_SUCCESS") {
-              setUser(result.data);
-              localStorage.setItem("authUser", JSON.stringify(result.data));
-            }
-          })
-          .catch(err => console.error("Error refreshing user profile:", err));
-      } catch (e) {
-        console.error(e);
-      }
+    // Auto-show Daily Almanac greeting once per session on entry
+    const hasSeenAlmanac = sessionStorage.getItem("hc_daily_almanac_seen");
+    if (!hasSeenAlmanac) {
+      setIsAlmanacModalOpen(true);
+      sessionStorage.setItem("hc_daily_almanac_seen", "1");
     }
+
+    const { token: storedToken, user: storedUser } = getStoredAuth();
+
+    if (storedToken) {
+      setToken(storedToken);
+      if (storedUser) {
+        setUser(storedUser);
+      }
+      refreshAuthMe(storedToken).then((freshUser) => {
+        if (freshUser) {
+          setUser(freshUser);
+        }
+      });
+    }
+
+    const handleAuthChange = (e: Event) => {
+      const custom = e as CustomEvent;
+      if (custom.detail) {
+        setToken(custom.detail.token || null);
+        setUser(custom.detail.user || null);
+      } else {
+        const current = getStoredAuth();
+        setToken(current.token);
+        setUser(current.user);
+      }
+    };
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
   }, []);
 
   const handleLoginSuccess = (newToken: string, newUser: any) => {
     setToken(newToken);
     setUser(newUser);
-    localStorage.setItem("authToken", newToken);
-    localStorage.setItem("authUser", JSON.stringify(newUser));
-    
+    saveStoredAuth(newToken, newUser);
+
     if (redirectPath) {
       router.push(redirectPath);
       setRedirectPath(null);
@@ -109,8 +229,7 @@ export default function HuyenCoPortal() {
   const handleLogout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("authUser");
+    clearStoredAuth();
   };
 
   const handleLaunchFeature = (path: string) => {
@@ -123,292 +242,595 @@ export default function HuyenCoPortal() {
   };
 
   const handleSharePortal = () => {
-    const link = `${window.location.origin}/huyen-co${refCode ? `?ref=${refCode}` : ""}`;
+    const code = user?.referralCode || refCode;
+    const link = `${window.location.origin}/huyen-co${code ? `?ref=${code}` : ""}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const activeSample = SAMPLE_PREVIEWS[sampleTab];
+
   return (
-    <div className="min-h-screen bg-[#05030A] text-slate-200 font-sans overflow-x-hidden relative">
-      {/* Safe Suspense boundary for useSearchParams */}
+    <div className="min-h-screen bg-[#07060B] text-[#EFECE6] font-sans overflow-x-hidden relative">
       <Suspense fallback={null}>
-        <QueryParamsTracker 
-          onRefCodeFound={setRefCode} 
-          onRedirectFound={handleRedirectFound} 
+        <QueryParamsTracker
+          onRefCodeFound={setRefCode}
+          onRedirectFound={handleRedirectFound}
+          onPaymentFound={handlePaymentFound}
         />
       </Suspense>
 
-      {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
       />
 
-      {/* Background - Mystical Galaxy/Nebula Effects */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 bg-[url(/images/mystic-bg.webp)] bg-cover bg-center opacity-30 mix-blend-screen" />
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-900/20 rounded-full blur-[150px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-purple-900/15 rounded-full blur-[150px]" />
-        <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[60vw] h-[60vw] bg-amber-900/5 rounded-full blur-[150px]" />
-        {/* Floating Stars */}
-        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:40px_40px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#05030A]/60 to-[#05030A]" />
-      </div>
+      <PricingModal
+        isOpen={isPricingModalOpen}
+        onClose={() => setIsPricingModalOpen(false)}
+        user={user}
+        onSuccess={(updatedUser) => setUser(updatedUser)}
+      />
 
-      {/* Sticky Glass Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-[#05030A]/40 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 group cursor-pointer">
-            <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)] group-hover:border-[#d4af37]/50 transition-colors">
-              <img src="/images/logo.png" alt="Huyền Cơ Logo" className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-[#d4af37] uppercase">
-                Huyền Cơ
-              </h1>
-              <p className="text-[9px] tracking-[0.2em] uppercase text-[#d4af37]/70 font-bold">
-                Bản Đồ Vận Mệnh AI
-              </p>
-            </div>
-          </div>
+      <DailyAlmanacModal
+        isOpen={isAlmanacModalOpen}
+        onClose={() => setIsAlmanacModalOpen(false)}
+        user={user}
+        onShare={handleSharePortal}
+        copied={copied}
+      />
 
-          <div className="flex items-center gap-4">
-            <Link href="#features" className="text-xs font-bold uppercase tracking-widest text-slate-300 hover:text-[#d4af37] transition-colors hidden sm:inline">
-              Khám Phá
-            </Link>
-
-            {user && (
-              <Link
-                href="/huyen-co/history"
-                className="hidden sm:flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-300 hover:text-[#d4af37] transition-colors"
-              >
-                <span>📜</span> Lịch Sử
-              </Link>
-            )}
-            
-            {user ? (
-              <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md">
-                <span className="text-xs text-[#d4af37] font-bold flex items-center gap-1">
-                  <span className="text-sm">🪙</span> {user.credits ?? 0}
-                </span>
-                <span className="w-px h-3 bg-white/20" />
-                <span className="text-xs font-semibold text-white truncate max-w-[100px]">
-                  {user.lastName} {user.firstName}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-[10px] font-bold text-red-400/80 hover:text-red-400 uppercase tracking-wider ml-1 transition-colors"
-                >
-                  Thoát
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#d4af37]/80 to-amber-600/80 text-white text-xs font-black rounded-full uppercase tracking-widest hover:from-[#d4af37] hover:to-amber-500 transition-all shadow-[0_0_20px_rgba(212,175,55,0.3)] border border-amber-300/30"
-              >
-                Đăng Nhập
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="relative z-10">
-        {/* Cinematic Hero Section */}
-        <section className="max-w-4xl mx-auto px-6 pt-24 pb-16 text-center">
-          {refCode && (
-            <div className="inline-flex items-center gap-2 px-5 py-2 bg-[#d4af37]/10 border border-[#d4af37]/30 rounded-full text-xs text-[#d4af37] font-bold mb-8 animate-pulse backdrop-blur-md">
-              <span className="text-base">🤝</span> Bạn nhận được lời mời! Nhận +20 credit khi đăng nhập.
-            </div>
-          )}
-          
-          <div className="relative inline-block mb-6">
-            <div className="absolute inset-0 bg-[#d4af37] blur-[100px] opacity-20 animate-pulse" />
-            <h2 className="text-5xl sm:text-7xl font-black tracking-tight leading-[1.1] uppercase relative z-10 drop-shadow-2xl">
-              Thấu Hiểu <br className="sm:hidden" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-[#d4af37] to-amber-600">
-                Bản Ngã
-              </span>
-            </h2>
-          </div>
-          
-          <p className="text-slate-300/80 text-base sm:text-lg leading-relaxed mb-10 max-w-2xl mx-auto font-light">
-            Tiên phong kết hợp di sản tinh hoa huyền học phương Đông, bài Tarot phương Tây cùng công nghệ AI Sinh Trắc Học đỉnh cao. Giải mã vận mệnh, thắp sáng tương lai của bạn.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
-            <Link 
-              href="#features" 
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-900/80 to-purple-900/80 hover:from-indigo-800 hover:to-purple-800 border border-indigo-500/30 rounded-full font-bold transition-all shadow-[0_0_30px_rgba(99,102,241,0.2)] text-xs uppercase tracking-widest text-center backdrop-blur-md"
-            >
-              Bắt Đầu Khám Phá
-            </Link>
-            <button 
-              onClick={handleSharePortal}
-              className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 rounded-full font-bold hover:bg-white/10 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2 backdrop-blur-md"
-            >
-              <span className="text-base">🔗</span> {copied ? "Đã Sao Chép Link!" : "Chia Sẻ Nhận Lượt"}
+      {/* Payment Status Toast */}
+      {paymentStatus && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100]">
+          <div
+            className={`px-6 py-3 rounded-full backdrop-blur-md border shadow-2xl flex items-center gap-3 ${
+              paymentStatus === "success"
+                ? "bg-emerald-950/90 border-emerald-500/50 text-emerald-300"
+                : "bg-red-950/90 border-red-500/50 text-red-300"
+            }`}
+          >
+            <SparkleIcon size={16} />
+            <span className="font-semibold text-sm tracking-wide">
+              {paymentStatus === "success" ? "Nạp tín chỉ thành công!" : "Giao dịch thanh toán đã dừng."}
+            </span>
+            <button onClick={() => setPaymentStatus(null)} className="ml-2 opacity-60 hover:opacity-100 cursor-pointer">
+              ✕
             </button>
           </div>
-        </section>
+        </div>
+      )}
 
-        {/* Feature Grid */}
-        <section id="features" className="max-w-6xl mx-auto px-6 py-16">
-          <div className="text-center mb-16">
-            <h3 className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.3em] mb-4 flex items-center justify-center gap-3">
-              <span className="w-12 h-px bg-indigo-500/30" />
-              Các công năng chính
-              <span className="w-12 h-px bg-indigo-500/30" />
-            </h3>
-            <h4 className="text-3xl sm:text-4xl font-serif font-bold text-white">
-              Cánh Cửa Mở Ra Huyền Cơ
-            </h4>
+      {/* Subtle Oriental Celestial Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[75vw] h-[55vw] max-w-[900px] bg-[#D4AF37]/[0.06] rounded-full blur-[150px]" />
+        <div className="absolute bottom-[-15%] right-[-10%] w-[45vw] h-[45vw] bg-[#B93829]/[0.04] rounded-full blur-[140px]" />
+        <div className="absolute inset-0 opacity-[0.12] bg-[radial-gradient(#D4AF37_0.75px,transparent_0.75px)] [background-size:48px_48px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#07060B]/70 to-[#07060B]" />
+      </div>
+
+      {/* Unified Navigation Header */}
+      <HuyenCoHeader
+        user={user}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenPricing={() => setIsPricingModalOpen(true)}
+        onLogout={handleLogout}
+      />
+
+      <main className="relative z-10">
+        {/* ============================================================== */}
+        {/* 1. HERO SECTION — Định vị rõ ràng trong 3 giây đầu tiên        */}
+        {/* ============================================================== */}
+        <section className="max-w-5xl mx-auto px-6 pt-14 sm:pt-20 pb-12 text-center">
+          {refCode && !user && (
+            <div className="inline-flex items-center gap-2 px-5 py-2 bg-[#D4AF37]/10 border border-[#D4AF37]/35 rounded-full text-xs text-[#E8C96A] font-medium mb-6 backdrop-blur-md">
+              <SparkleIcon size={14} />
+              <span>Bạn được bạn bè giới thiệu — Đăng ký tài khoản nhận ngay +20 Tín Chỉ miễn phí</span>
+            </div>
+          )}
+
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#120F1D] border border-[#D4AF37]/25 text-[11px] uppercase tracking-[0.22em] text-[#C5B386] mb-6">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+            <span>Hệ Sinh Thái Huyền Học Đông Phương & Sinh Trắc Học AI</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* 1. Face Scan */}
-            <div 
-              onClick={() => handleLaunchFeature("/huyen-co/face-scan")}
-              className="group relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 cursor-pointer transition-all hover:bg-white/10 hover:border-[#d4af37]/40 flex flex-col items-center text-center"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#d4af37]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative z-20 flex flex-col items-center">
-                <div className="w-24 h-24 mb-6 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_10px_40px_rgba(212,175,55,0.3)] group-hover:scale-105 transition-all duration-500 border border-white/10">
-                  <img src="/images/face_scan_spiritual.png" alt="Face Scan" className="w-full h-full object-cover" />
-                </div>
-                <h5 className="text-xl font-bold mb-3 text-white group-hover:text-[#d4af37] transition-colors">Tướng Mặt AI</h5>
-                <p className="text-sm text-slate-300/80 line-clamp-3">Phân tích tỷ lệ ngũ quan, dự đoán vận mệnh và tính cách qua ảnh chụp khuôn mặt thời gian thực.</p>
-              </div>
-            </div>
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-serif font-bold tracking-wide leading-[1.12] text-[#FFFDF9] mb-6">
+            Soi Chiếu <span className="hc-gold-gradient-text">Hình Tướng</span>
+            <br />
+            Thấu Suốt <span className="hc-gold-gradient-text">Thiên Cơ</span>
+          </h1>
 
-            {/* 2. Palm Scan */}
-            <div 
-              onClick={() => handleLaunchFeature("/huyen-co/palm-scan")}
-              className="group relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 cursor-pointer transition-all hover:bg-white/10 hover:border-[#d4af37]/40 flex flex-col items-center text-center"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-[#d4af37]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative z-20 flex flex-col items-center">
-                <div className="w-24 h-24 mb-6 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_10px_40px_rgba(212,175,55,0.3)] group-hover:scale-105 transition-all duration-500 border border-white/10">
-                  <img src="/images/palm_scan_spiritual.png" alt="Palm Scan" className="w-full h-full object-cover" />
-                </div>
-                <h5 className="text-xl font-bold mb-3 text-white group-hover:text-[#d4af37] transition-colors">Chỉ Tay AI</h5>
-                <p className="text-sm text-slate-300/80 line-clamp-3">Đọc các đường sinh đạo, trí đạo, tâm đạo trên lòng bàn tay bạn.</p>
-              </div>
-            </div>
-
-            {/* 3. Tarot */}
-            <div 
-              onClick={() => handleLaunchFeature("/huyen-co/boibai")}
-              className="group relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 cursor-pointer transition-all hover:bg-white/10 hover:border-indigo-400/40 flex flex-col items-center text-center"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative z-20 flex flex-col items-center">
-                <div className="w-24 h-24 mb-6 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_10px_40px_rgba(99,102,241,0.3)] group-hover:scale-105 transition-all duration-500 border border-white/10">
-                  <img src="/images/tarot_spiritual.png" alt="Tarot" className="w-full h-full object-cover" />
-                </div>
-                <h5 className="text-xl font-bold mb-3 text-white group-hover:text-indigo-300 transition-colors">Bói Bài Tây AR</h5>
-                <p className="text-sm text-slate-300/80 line-clamp-3">Bốc bài bằng cử chỉ tay qua camera và lắng nghe AI giải mã thông điệp.</p>
-              </div>
-            </div>
-
-            {/* 4. Zi Wei (Tu Vi) */}
-            <div 
-              onClick={() => handleLaunchFeature("/huyen-co/laso")}
-              className="group relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 cursor-pointer transition-all hover:bg-white/10 hover:border-amber-400/40 flex flex-col items-center text-center"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative z-20 flex flex-col items-center">
-                <div className="w-24 h-24 mb-6 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_10px_40px_rgba(251,191,36,0.3)] group-hover:scale-105 transition-all duration-500 border border-white/10">
-                  <img src="/images/laso_spiritual.png" alt="Tử Vi" className="w-full h-full object-cover" />
-                </div>
-                <h5 className="text-xl font-bold mb-3 text-white group-hover:text-amber-300 transition-colors">Lập Lá Số Tử Vi</h5>
-                <p className="text-sm text-slate-300/80 line-clamp-3">Kiến tạo lá số 12 cung và xem luận giải chi tiết theo ngày sinh.</p>
-              </div>
-            </div>
-
-            {/* 5. TuVi Chat */}
-            <div 
-              onClick={() => handleLaunchFeature("/huyen-co/chat")}
-              className="group relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 cursor-pointer transition-all hover:bg-white/10 hover:border-cyan-400/40 flex flex-col items-center text-center"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              <div className="relative z-20 flex flex-col items-center">
-                <div className="w-24 h-24 mb-6 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_10px_40px_rgba(34,211,238,0.3)] group-hover:scale-105 transition-all duration-500 border border-white/10">
-                  <img src="/images/chat_spiritual.png" alt="TuVi Chat" className="w-full h-full object-cover" />
-                </div>
-                <h5 className="text-xl font-bold mb-3 text-white group-hover:text-cyan-300 transition-colors">TuVi Chat AI</h5>
-                <p className="text-sm text-slate-300/80 line-clamp-3">Chuyên gia phong thủy ảo, sẵn sàng giải đáp 24/7 mọi thắc mắc của bạn.</p>
-              </div>
-            </div>
-
-            {/* 6. History – chỉ hiện khi đã đăng nhập */}
-            {user && (
-              <div
-                onClick={() => router.push("/huyen-co/history")}
-                className="group relative overflow-hidden bg-white/5 border border-white/10 rounded-3xl p-8 cursor-pointer transition-all hover:bg-white/10 hover:border-emerald-400/40 flex flex-col items-center text-center"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative z-20 flex flex-col items-center">
-                  <div className="w-24 h-24 mb-6 rounded-2xl bg-white/5 border border-emerald-500/20 flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.5)] group-hover:shadow-[0_10px_40px_rgba(52,211,153,0.3)] group-hover:scale-105 transition-all duration-500">
-                    <span className="text-5xl">📜</span>
-                  </div>
-                  <h5 className="text-xl font-bold mb-3 text-white group-hover:text-emerald-300 transition-colors">Lịch Sử Của Bạn</h5>
-                  <p className="text-sm text-slate-300/80 line-clamp-3">Xem lại toàn bộ kết quả tướng mặt và chỉ tay đã phân tích trước đây.</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Download App Banner */}
-        <section className="max-w-6xl mx-auto px-6 py-12">
-          <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#120a26] to-[#080412] border border-white/5 p-10 sm:p-16 text-center">
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[100px] pointer-events-none" />
-            <div className="relative z-10">
-              <h4 className="text-2xl sm:text-4xl font-serif font-bold mb-6 text-white">
-                Tải App Ngay Hôm Nay
-              </h4>
-              <p className="text-slate-300/80 text-sm sm:text-base leading-relaxed max-w-xl mx-auto mb-10">
-                Nhận thêm lượt dùng thử miễn phí, thông báo tử vi hàng ngày và trải nghiệm mượt mà nhất trên thiết bị di động của bạn.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <button 
-                  onClick={() => alert("Sắp ra mắt trên App Store!")}
-                  className="px-8 py-3.5 bg-white text-black font-bold rounded-full hover:bg-slate-200 transition-all flex items-center justify-center gap-3 text-sm"
-                >
-                  <span className="text-xl">🍎</span> App Store
-                </button>
-                <button 
-                  onClick={() => alert("Sắp ra mắt trên Google Play!")}
-                  className="px-8 py-3.5 bg-white/10 border border-white/20 text-white font-bold rounded-full hover:bg-white/20 transition-all flex items-center justify-center gap-3 text-sm backdrop-blur-md"
-                >
-                  <span className="text-xl">🤖</span> Google Play
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="max-w-6xl mx-auto px-6 py-8 mt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2 opacity-50">
-            <img src="/images/logo.png" alt="Logo" className="w-6 h-6 rounded-md grayscale" />
-            <span className="text-xs font-bold tracking-widest uppercase">CalnovaAI</span>
-          </div>
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest">
-            © 2026 Huyền Cơ Portal. Môi trường phát triển.
+          <p className="text-[#C5B386] text-sm sm:text-base lg:text-lg leading-relaxed mb-9 max-w-2xl mx-auto font-normal">
+            Kết hợp tinh hoa <strong className="text-[#EFECE6] font-medium">Nhân Tướng Học, Tử Vi Đẩu Số, Quẻ Bài Dân Gian 32 Lá</strong> cùng công nghệ nhận diện sinh trắc học chuẩn xác — giúp bạn định vị bản mệnh và đưa ra quyết định sáng suốt.
           </p>
+
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-3.5">
+            <a
+              href="#phap-mon"
+              className="w-full sm:w-auto px-8 py-4 hc-gold-btn rounded-full font-bold text-xs uppercase tracking-[0.16em] text-center flex items-center justify-center gap-2"
+            >
+              <SparkleIcon size={15} />
+              <span>Chọn Pháp Môn Khai Mở</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => setIsAlmanacModalOpen(true)}
+              className="w-full sm:w-auto px-7 py-4 bg-[#120F1D] hover:bg-[#1A1528] border border-[#D4AF37]/35 hover:border-[#D4AF37] rounded-full font-semibold text-xs uppercase tracking-[0.15em] text-[#FFF3C4] transition-all text-center cursor-pointer"
+            >
+              ✦ Lịch Vận Khí Hôm Nay
+            </button>
+            <button
+              onClick={handleSharePortal}
+              className="w-full sm:w-auto px-6 py-4 bg-white/[0.03] border border-white/10 hover:border-[#D4AF37]/30 rounded-full font-medium text-xs uppercase tracking-[0.14em] text-[#C5B386] hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ShareSealIcon size={15} />
+              <span>{copied ? "Đã Sao Chép Liên Kết!" : "Chia Sẻ Nhận Tín Chỉ"}</span>
+            </button>
+          </div>
+
+          {/* Thanh Tóm Tắt Thiên Cơ Hôm Nay (Nhanh gọn, 0 API call) */}
+          <div className="mt-10 text-left">
+            <DailyAlmanacCompactBar onOpenModal={() => setIsAlmanacModalOpen(true)} />
+          </div>
+        </section>
+
+        {/* ============================================================== */}
+        {/* 2. LỘ TRÌNH 3 BƯỚC DẪN DẮT (Giúp người dùng mới biết dùng ngay) */}
+        {/* ============================================================== */}
+        <section className="max-w-6xl mx-auto px-6 pb-12">
+          <div className="hc-card rounded-3xl p-6 sm:p-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-6 border-b border-[#D4AF37]/15">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#D4AF37] block mb-1">
+                  Chỉ Dẫn Cho Người Mới
+                </span>
+                <h2 className="text-xl sm:text-2xl font-serif font-bold text-white">
+                  Bắt Đầu Khai Mở Vận Mệnh Như Thế Nào?
+                </h2>
+              </div>
+              {!user ? (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="self-start md:self-auto px-5 py-2.5 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-xs font-semibold text-[#FFF3C4] hover:bg-[#D4AF37]/25 transition-all cursor-pointer"
+                >
+                  Đăng ký tài khoản miễn phí →
+                </button>
+              ) : (
+                <div className="flex items-center gap-3 text-xs text-[#C5B386]">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span>
+                    Xin chào <strong className="text-white">{user.lastName} {user.firstName}</strong> • Bạn đang có{" "}
+                    <strong className="text-[#E8C96A]">{user.credits ?? 0} Tín Chỉ</strong>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div
+                onClick={() => handleLaunchFeature("/huyen-co/laso")}
+                className="group p-5 rounded-2xl bg-[#0B0912]/80 border border-[#D4AF37]/12 hover:border-[#D4AF37]/40 transition-all cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-[#D4AF37] px-2.5 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25">
+                    Bước 01 • Gốc Bản Mệnh
+                  </span>
+                  <span className="text-xs text-[#C5B386] group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+                <h3 className="text-base font-serif font-bold text-white mb-1.5 group-hover:text-[#E8C96A] transition-colors">
+                  An Tinh Bàn Tử Vi Hoặc Quét Tướng
+                </h3>
+                <p className="text-xs text-[#C5B386] leading-relaxed">
+                  Nhập ngày giờ sinh để lập <strong className="text-slate-200">Lá Số Tử Vi 12 Cung</strong> hoặc dùng Camera quét <strong className="text-slate-200">Diện Tướng / Chỉ Tay</strong> trong 30 giây.
+                </p>
+              </div>
+
+              <div
+                onClick={() => handleLaunchFeature("/huyen-co/boibai")}
+                className="group p-5 rounded-2xl bg-[#0B0912]/80 border border-[#D4AF37]/12 hover:border-[#D4AF37]/40 transition-all cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-[#D4AF37] px-2.5 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25">
+                    Bước 02 • Giải Mã Sự Việc
+                  </span>
+                  <span className="text-xs text-[#C5B386] group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+                <h3 className="text-base font-serif font-bold text-white mb-1.5 group-hover:text-[#E8C96A] transition-colors">
+                  Nhận Luận Giải Cổ Thư Đa Chiều
+                </h3>
+                <p className="text-xs text-[#C5B386] leading-relaxed">
+                  Hệ thống đối chiếu trực tiếp tỷ lệ Tam Đình, Ngũ Quan hoặc <strong className="text-slate-200">Quẻ Bài Dân Gian 32 Lá</strong> với tàng thư cổ học để đưa ra bản luận giải chi tiết.
+                </p>
+              </div>
+
+              <div
+                onClick={() => handleLaunchFeature("/huyen-co/chat")}
+                className="group p-5 rounded-2xl bg-[#0B0912]/80 border border-[#D4AF37]/12 hover:border-[#D4AF37]/40 transition-all cursor-pointer"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-[#D4AF37] px-2.5 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25">
+                    Bước 03 • Vấn Đáp Sâu
+                  </span>
+                  <span className="text-xs text-[#C5B386] group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+                <h3 className="text-base font-serif font-bold text-white mb-1.5 group-hover:text-[#E8C96A] transition-colors">
+                  Tham Vấn Cố Vấn Mệnh Lý 1-1
+                </h3>
+                <p className="text-xs text-[#C5B386] leading-relaxed">
+                  Trò chuyện trực tiếp với <strong className="text-slate-200">Cố Vấn Mệnh Lý AI</strong> đã nắm rõ lá số của bạn để hỏi sâu về Tình duyên, Sự nghiệp, Tài lộc.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================================== */}
+        {/* 3. BENTO GRID 5 PHÁP MÔN HUYỀN CƠ (Cân đối, Sang trọng)        */}
+        {/* ============================================================== */}
+        <section id="phap-mon" className="max-w-6xl mx-auto px-6 py-12">
+          <div className="text-center mb-12">
+            <div className="text-[11px] font-bold uppercase text-[#D4AF37] tracking-[0.28em] mb-3 flex items-center justify-center gap-3">
+              <span className="w-10 h-px bg-[#D4AF37]/35" />
+              <span>Ngũ Đại Pháp Môn</span>
+              <span className="w-10 h-px bg-[#D4AF37]/35" />
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white">
+              Chọn Pháp Môn Chiêm Nghiệm
+            </h2>
+            <p className="text-xs sm:text-sm text-[#C5B386] mt-2 max-w-xl mx-auto">
+              Mỗi pháp môn là một lăng kính soi chiếu vận mệnh độc lập, đồng thời liên thông chặt chẽ với nhau qua Hồ sơ Bản Mệnh của bạn.
+            </p>
+          </div>
+
+          {/* Hàng 1: 2 Pháp Môn Sinh Trắc Chủ Lực (2 cột lớn cân xứng) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* 1. Diện Tướng Học */}
+            <div
+              onClick={() => handleLaunchFeature("/huyen-co/face-scan")}
+              className="hc-card hc-card-hover rounded-3xl p-7 sm:p-8 cursor-pointer flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div className="absolute -right-10 -top-10 w-44 h-44 bg-[#D4AF37]/[0.05] rounded-full blur-2xl pointer-events-none group-hover:bg-[#D4AF37]/[0.12] transition-all" />
+
+              <div>
+                <div className="flex items-start justify-between gap-4 mb-6">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-[#0A0812] border border-[#D4AF37]/30 flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.6)] group-hover:border-[#D4AF37]/70 transition-all shrink-0">
+                    <FacePhysiognomyIcon size={58} />
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className="px-3 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/35 text-[10px] font-bold uppercase tracking-widest text-[#FFF3C4]">
+                      Nhân Tướng Học AI
+                    </span>
+                    <span className="text-[11px] text-[#C5B386]">⏱ Kết quả trong ~20 giây</span>
+                  </div>
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl font-serif font-bold text-white group-hover:text-[#E8C96A] transition-colors mb-2.5">
+                  Diện Tướng Học (Xem Tướng Mặt)
+                </h3>
+                <p className="text-sm text-[#C5B386] leading-relaxed mb-5">
+                  Đo đạc chính xác tỷ lệ <strong className="text-slate-200">Tam Đình (Thượng – Trung – Hạ)</strong> và <strong className="text-slate-200">Ngũ Quan (Trán, Mắt, Mũi, Miệng, Cằm)</strong> qua ảnh chụp hoặc tải lên, luận giải tính cách, tài vận và 3 giai đoạn Tiền – Trung – Hậu vận.
+                </p>
+              </div>
+
+              <div>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {["Tỷ lệ Tam Đình", "Ngũ Quan Lục Phủ", "Tiền • Trung • Hậu Vận", "Đồ hình Bát Quái"].map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2.5 py-1 rounded-lg bg-[#0A0812]/90 border border-[#D4AF37]/15 text-[11px] text-[#C5B386]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-[#E8C96A] group-hover:underline">
+                    Khai Mở Diện Tướng
+                  </span>
+                  <span className="w-8 h-8 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/35 flex items-center justify-center text-[#FFF3C4] group-hover:bg-[#D4AF37] group-hover:text-black transition-all">
+                    →
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Thủ Tướng Học */}
+            <div
+              onClick={() => handleLaunchFeature("/huyen-co/palm-scan")}
+              className="hc-card hc-card-hover rounded-3xl p-7 sm:p-8 cursor-pointer flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div className="absolute -right-10 -top-10 w-44 h-44 bg-[#D4AF37]/[0.05] rounded-full blur-2xl pointer-events-none group-hover:bg-[#D4AF37]/[0.12] transition-all" />
+
+              <div>
+                <div className="flex items-start justify-between gap-4 mb-6">
+                  <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-[#0A0812] border border-[#D4AF37]/30 flex items-center justify-center shadow-[0_10px_30px_rgba(0,0,0,0.6)] group-hover:border-[#D4AF37]/70 transition-all shrink-0">
+                    <PalmReadingIcon size={58} />
+                  </div>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className="px-3 py-1 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/35 text-[10px] font-bold uppercase tracking-widest text-[#FFF3C4]">
+                      Thủ Tướng Học AI
+                    </span>
+                    <span className="text-[11px] text-[#C5B386]">⏱ Nam Tả • Nữ Hữu</span>
+                  </div>
+                </div>
+
+                <h3 className="text-2xl sm:text-3xl font-serif font-bold text-white group-hover:text-[#E8C96A] transition-colors mb-2.5">
+                  Thủ Tướng Học (Xem Chỉ Tay)
+                </h3>
+                <p className="text-sm text-[#C5B386] leading-relaxed mb-5">
+                  Nhận diện và vẽ sơ đồ trực quan các đường chỉ chính trên lòng bàn tay: <strong className="text-slate-200">Sinh Đạo, Trí Đạo, Tâm Đạo, Định Mệnh</strong>; giải mã chuyên sâu 4 phương diện Sức khỏe, Sự nghiệp, Tình duyên và Nội tâm.
+                </p>
+              </div>
+
+              <div>
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {["Sinh Đạo • Trí Đạo • Tâm Đạo", "Đường Định Mệnh", "4 Phương Diện Đời Sống", "Vẽ Sơ Đồ Vân Tay"].map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2.5 py-1 rounded-lg bg-[#0A0812]/90 border border-[#D4AF37]/15 text-[11px] text-[#C5B386]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-[#E8C96A] group-hover:underline">
+                    Quét Lòng Bàn Tay
+                  </span>
+                  <span className="w-8 h-8 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/35 flex items-center justify-center text-[#FFF3C4] group-hover:bg-[#D4AF37] group-hover:text-black transition-all">
+                    →
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Hàng 2: 3 Pháp Môn Tinh Bàn, Quẻ Bài & Cố Vấn Mệnh Lý */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 3. Lá Số Tử Vi 12 Cung */}
+            <div
+              onClick={() => handleLaunchFeature("/huyen-co/laso")}
+              className="hc-card hc-card-hover rounded-3xl p-7 cursor-pointer flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="w-16 h-16 rounded-2xl bg-[#0A0812] border border-[#D4AF37]/30 flex items-center justify-center shadow-lg group-hover:border-[#D4AF37]/70 transition-all">
+                    <TuViAstrolabeIcon size={48} />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25 text-[10px] font-bold uppercase tracking-wider text-[#E8C96A]">
+                    12 Cung Vị
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-serif font-bold text-white group-hover:text-[#E8C96A] transition-colors mb-2">
+                  Lập Lá Số Tử Vi
+                </h3>
+                <p className="text-xs sm:text-sm text-[#C5B386] leading-relaxed mb-5">
+                  An sao lập lá số chuẩn Âm Dương Ngũ Hành, bình giải chi tiết Chính tinh – Phụ tinh tại 12 cung (Mệnh, Thân, Quan, Tài, Phu Thê...) và Đại hạn.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#E8C96A]">
+                  An Sao Lập Lá Số
+                </span>
+                <span className="text-[#E8C96A] group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+
+            {/* 4. Bói Bài Dân Gian 32 Lá */}
+            <div
+              onClick={() => handleLaunchFeature("/huyen-co/boibai")}
+              className="hc-card hc-card-hover rounded-3xl p-7 cursor-pointer flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="w-16 h-16 rounded-2xl bg-[#0A0812] border border-[#D4AF37]/30 flex items-center justify-center shadow-lg group-hover:border-[#D4AF37]/70 transition-all">
+                    <FolkCardsIcon size={48} />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/25 text-[10px] font-bold uppercase tracking-wider text-[#E8C96A]">
+                    32 Lá Cổ Truyền
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-serif font-bold text-white group-hover:text-[#E8C96A] transition-colors mb-2">
+                  Bói Bài Dân Gian 32 Lá
+                </h3>
+                <p className="text-xs sm:text-sm text-[#C5B386] leading-relaxed mb-5">
+                  Gieo quẻ <strong className="text-slate-200">Tam Đa (3 lá), Thất Tinh (7 lá), Thời Vận (12 lá)</strong> bằng thao tác chạm hoặc cử chỉ tay AR, tự động nhận diện cách cục & đối chiếu Tử Vi.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#E8C96A]">
+                  Gieo Quẻ Bài Ngay
+                </span>
+                <span className="text-[#E8C96A] group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+
+            {/* 5. Cố Vấn Mệnh Lý AI */}
+            <div
+              onClick={() => handleLaunchFeature("/huyen-co/chat")}
+              className="hc-card hc-card-hover rounded-3xl p-7 cursor-pointer flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="w-16 h-16 rounded-2xl bg-[#0A0812] border border-[#D4AF37]/30 flex items-center justify-center shadow-lg group-hover:border-[#D4AF37]/70 transition-all">
+                    <AICoachOracleIcon size={48} />
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                    Trực Tuyến 24/7
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-serif font-bold text-white group-hover:text-[#E8C96A] transition-colors mb-2">
+                  Cố Vấn Mệnh Lý AI
+                </h3>
+                <p className="text-xs sm:text-sm text-[#C5B386] leading-relaxed mb-5">
+                  Đối thoại sâu sắc cùng Bậc Thầy Minh Triết Phương Đông. Tự động kết nối lá số Tử Vi chính chủ để giải đáp cụ thể từng trăn trở của bạn.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#E8C96A]">
+                  Khai Vấn Cùng Cố Vấn
+                </span>
+                <span className="text-[#E8C96A] group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Thanh truy cập nhanh Lịch Sử (Nếu đã đăng nhập) */}
+          {user && (
+            <div
+              onClick={() => router.push("/huyen-co/history")}
+              className="mt-6 hc-card hc-card-hover rounded-2xl p-5 cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-[#0A0812] border border-[#D4AF37]/30 flex items-center justify-center text-[#E8C96A]">
+                  <ScrollHistoryIcon size={24} />
+                </div>
+                <div>
+                  <h4 className="text-base font-serif font-bold text-white">
+                    Sớ Lụa Lịch Sử Chiêm Nghiệm Của Bạn
+                  </h4>
+                  <p className="text-xs text-[#C5B386]">
+                    Xem lại toàn bộ bản đồ Diện Tướng và Thủ Tướng đã lưu trữ và chia sẻ nhận thưởng Tín chỉ.
+                  </p>
+                </div>
+              </div>
+              <span className="px-5 py-2 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/35 text-xs font-semibold text-[#FFF3C4] whitespace-nowrap">
+                Mở Sớ Lụa Lịch Sử →
+              </span>
+            </div>
+          )}
+        </section>
+
+        {/* ============================================================== */}
+        {/* 4. KHU VỰC XEM TRƯỚC BẢN LUẬN GIẢI MẪU (Tạo niềm tin tức thì)  */}
+        {/* ============================================================== */}
+        <section id="sample-preview" className="max-w-6xl mx-auto px-6 py-12">
+          <div className="hc-card rounded-3xl p-6 sm:p-10">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 pb-6 border-b border-[#D4AF37]/15">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#D4AF37] block mb-2">
+                  Minh Bạch Chất Lượng Luận Giải
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white">
+                  Xem Trước Kết Quả Thực Tế Từ Huyền Cơ
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap gap-2 bg-[#090710] p-1.5 rounded-2xl border border-[#D4AF37]/20">
+                {[
+                  { id: "face", label: "Diện Tướng Học" },
+                  { id: "cards", label: "Quẻ Bài Tam Đa" },
+                  { id: "tuvi", label: "Tinh Bàn Tử Vi" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSampleTab(t.id as any)}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      sampleTab === t.id
+                        ? "hc-gold-btn font-bold"
+                        : "text-[#C5B386] hover:text-white"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              <div className="lg:col-span-5 space-y-3">
+                <span className="inline-block px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[10px] font-bold uppercase tracking-wider text-[#E8C96A]">
+                  {activeSample.badge}
+                </span>
+                <h3 className="text-xl sm:text-2xl font-serif font-bold text-white leading-snug">
+                  {activeSample.title}
+                </h3>
+                <div className="space-y-2.5 pt-2">
+                  {activeSample.metrics.map((m, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-xl bg-[#0A0812]/90 border border-[#D4AF37]/15"
+                    >
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] mb-0.5">
+                        {m.label}
+                      </div>
+                      <div className="text-xs text-[#EFECE6] font-medium">{m.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="lg:col-span-7 bg-[#0A0812]/95 border border-[#D4AF37]/25 rounded-2xl p-6 sm:p-8 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#E8C96A] mb-4 pb-3 border-b border-[#D4AF37]/15">
+                    <SparkleIcon size={15} />
+                    <span>Trích Đoạn Bản Luận Giải Chuyên Sâu</span>
+                  </div>
+                  <p className="text-sm sm:text-base text-[#EFECE6] leading-8 font-serif italic mb-6">
+                    &ldquo;{activeSample.excerpt}&rdquo;
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-[#D4AF37]/15 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <span className="text-xs text-[#C5B386]">
+                    Luận giải cá nhân hóa 100% theo dữ liệu thực của bạn
+                  </span>
+                  <button
+                    onClick={() => handleLaunchFeature(activeSample.ctaPath)}
+                    className="px-6 py-3 hc-gold-btn rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer"
+                  >
+                    {activeSample.ctaLabel} →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================================== */}
+        {/* 5. FOOTER ĐÔNG PHƯƠNG TRANG TRỌNG                              */}
+        {/* ============================================================== */}
+        <footer className="max-w-6xl mx-auto px-6 py-10 mt-8 border-t border-[#D4AF37]/15 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <HuyenCoLogoIcon size={28} />
+            <div>
+              <span className="text-xs font-serif font-bold tracking-[0.18em] uppercase text-[#E8C96A] block">
+                Huyền Cơ Các • Calnova AI
+              </span>
+              <span className="text-[10px] text-[#C5B386]/70">
+                Tinh hoa Nhân Tướng Học, Tử Vi Đẩu Số & Trí Tuệ Nhân Tạo
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-5 text-xs text-[#C5B386]">
+            <Link href="/huyen-co/face-scan" className="hover:text-[#E8C96A] transition-colors">
+              Diện Tướng
+            </Link>
+            <Link href="/huyen-co/palm-scan" className="hover:text-[#E8C96A] transition-colors">
+              Thủ Tướng
+            </Link>
+            <Link href="/huyen-co/laso" className="hover:text-[#E8C96A] transition-colors">
+              Tử Vi
+            </Link>
+            <Link href="/huyen-co/boibai" className="hover:text-[#E8C96A] transition-colors">
+              Bói Bài
+            </Link>
+            <Link href="/huyen-co/chat" className="hover:text-[#E8C96A] transition-colors">
+              Cố Vấn AI
+            </Link>
+          </div>
         </footer>
       </main>
     </div>
   );
 }
-
