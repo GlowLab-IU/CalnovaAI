@@ -20,6 +20,7 @@ import {
   saveStoredAuth,
   updateStoredUser,
 } from "../utils/authSync";
+import { OPEN_PRICING_EVENT } from "../utils/creditFlow";
 
 interface HuyenCoHeaderProps {
   user?: any | null;
@@ -54,6 +55,7 @@ export default function HuyenCoHeader({
   const [hasToken, setHasToken] = useState<boolean>(false);
   const [localAuthModalOpen, setLocalAuthModalOpen] = useState<boolean>(false);
   const [localPricingModalOpen, setLocalPricingModalOpen] = useState<boolean>(false);
+  const [pricingContextNote, setPricingContextNote] = useState<string>("");
 
   // Đồng bộ từ propUser nếu trang cha truyền xuống
   useEffect(() => {
@@ -102,16 +104,26 @@ export default function HuyenCoHeader({
       }
     };
 
+    const handleGlobalOpenPricing = (e: Event) => {
+      const custom = e as CustomEvent;
+      setPricingContextNote(custom.detail?.contextNote || "");
+      setLocalPricingModalOpen(true);
+    };
+
     window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
     window.addEventListener("storage", handleStorage);
+    window.addEventListener(OPEN_PRICING_EVENT, handleGlobalOpenPricing);
     return () => {
       window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
       window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(OPEN_PRICING_EVENT, handleGlobalOpenPricing);
     };
   }, []);
 
   const effectiveUser = propUser || internalUser;
   const isLoggedIn = Boolean(effectiveUser || hasToken);
+  const currentCredits = Number(effectiveUser?.credits ?? 0);
+  const isLowCredits = currentCredits <= 3;
 
   const isActive = (href: string, exact?: boolean) => {
     if (!pathname) return false;
@@ -128,6 +140,7 @@ export default function HuyenCoHeader({
   };
 
   const handleOpenPricingClick = () => {
+    setPricingContextNote("");
     if (onOpenPricing) {
       onOpenPricing();
     } else {
@@ -215,16 +228,26 @@ export default function HuyenCoHeader({
                 <button
                   type="button"
                   onClick={handleOpenPricingClick}
-                  className="flex items-center gap-1.5 hover:bg-[#D4AF37]/10 px-2 py-1 rounded-full transition-colors cursor-pointer"
-                  title="Nạp Tín Chỉ"
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all cursor-pointer ${
+                    isLowCredits
+                      ? "bg-[#D4AF37]/14 hover:bg-[#D4AF37]/24 border border-[#D4AF37]/35"
+                      : "hover:bg-[#D4AF37]/10"
+                  }`}
+                  title="Tụ Bảo Các • Nạp Tín Chỉ"
                 >
                   <CreditCoinIcon size={16} />
-                  <span className="text-xs text-[#E8C96A] font-bold">
-                    {effectiveUser?.credits ?? 0}
+                  <span className="text-xs text-[#F6D87A] font-bold">
+                    {currentCredits}
                   </span>
-                  <span className="w-4 h-4 rounded-full bg-[#D4AF37]/20 text-[#E8C96A] flex items-center justify-center text-[10px] font-bold leading-none">
-                    +
-                  </span>
+                  {isLowCredits ? (
+                    <span className="px-1.5 py-0.5 rounded-full bg-[#D4AF37]/25 text-[#FFF3C4] text-[9.5px] font-bold tracking-wide leading-none">
+                      Nạp +
+                    </span>
+                  ) : (
+                    <span className="w-4 h-4 rounded-full bg-[#D4AF37]/20 text-[#E8C96A] flex items-center justify-center text-[10px] font-bold leading-none">
+                      +
+                    </span>
+                  )}
                 </button>
 
                 <span className="w-px h-4 bg-[#D4AF37]/20" />
@@ -310,11 +333,15 @@ export default function HuyenCoHeader({
         />
       )}
 
-      {!onOpenPricing && effectiveUser && (
+      {effectiveUser && (
         <PricingModal
           isOpen={localPricingModalOpen}
-          onClose={() => setLocalPricingModalOpen(false)}
+          onClose={() => {
+            setLocalPricingModalOpen(false);
+            setPricingContextNote("");
+          }}
           user={effectiveUser}
+          contextNote={pricingContextNote}
           onSuccess={(updatedUser) => {
             setInternalUser(updatedUser);
             updateStoredUser(updatedUser);

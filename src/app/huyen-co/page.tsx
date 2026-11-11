@@ -398,12 +398,19 @@ export default function HuyenCoPortal() {
                   Đăng ký tài khoản miễn phí →
                 </button>
               ) : (
-                <div className="flex items-center gap-3 text-xs text-[#C5B386]">
+                <div className="flex flex-wrap items-center gap-2.5 text-xs text-[#C5B386]">
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   <span>
-                    Xin chào <strong className="text-white">{user.lastName} {user.firstName}</strong> • Bạn đang có{" "}
+                    Xin chào <strong className="text-white">{user.lastName} {user.firstName}</strong> • Ví Linh Khí:{" "}
                     <strong className="text-[#E8C96A]">{user.credits ?? 0} Tín Chỉ</strong>
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsPricingModalOpen(true)}
+                    className="px-3 py-1 rounded-full bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 border border-[#D4AF37]/35 text-[11px] font-semibold text-[#FFF3C4] transition-all cursor-pointer"
+                  >
+                    + Thỉnh Tín Chỉ
+                  </button>
                 </div>
               )}
             </div>

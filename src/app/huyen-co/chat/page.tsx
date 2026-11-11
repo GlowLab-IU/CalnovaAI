@@ -6,13 +6,22 @@ import { useSearchParams } from "next/navigation";
 import RollDatePicker from "../RollDatePicker";
 import HuyenCoHeader from "../components/HuyenCoHeader";
 import OracleReadingMessage from "../components/OracleReadingMessage";
-import { AICoachOracleIcon, TuViAstrolabeIcon } from "../components/HuyenCoIcons";
+import { AICoachOracleIcon, CreditCoinIcon, TuViAstrolabeIcon } from "../components/HuyenCoIcons";
 import { AUTH_CHANGE_EVENT, getStoredAuth, refreshAuthMe } from "../utils/authSync";
+import {
+  CREDIT_STATE_CHANGE_EVENT,
+  DAILY_FREE_LIMIT,
+  buildReferralShareUrl,
+  consumeFeatureCredit,
+  getDailyFreeRemaining,
+  openGlobalPricingModal,
+} from "../utils/creditFlow";
 
 interface Message {
   role: "user" | "assistant";
   text: string;
   suggestions?: string[];
+  isCreditInvite?: boolean;
 }
 
 const capitalizeWords = (str: string) => {
@@ -119,11 +128,24 @@ function SpiritualChatInner() {
   // Auth states
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [user, setUser] = useState<any | null>(null);
+  const [freeRemaining, setFreeRemaining] = useState<number>(DAILY_FREE_LIMIT);
+  const [shareCopied, setShareCopied] = useState<boolean>(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const API_BASE = "https://api.calnovaai.com";
 
   const TUVI_BASE = "https://api.calnovaai.com/glowlab/tuvi";
+
+  // Đồng bộ số lượt Lộc Khai Tâm miễn phí mỗi ngày
+  useEffect(() => {
+    const syncFreeQuota = () => {
+      const uid = user?.id || user?.userId || null;
+      setFreeRemaining(getDailyFreeRemaining(uid));
+    };
+    syncFreeQuota();
+    window.addEventListener(CREDIT_STATE_CHANGE_EVENT, syncFreeQuota);
+    return () => window.removeEventListener(CREDIT_STATE_CHANGE_EVENT, syncFreeQuota);
+  }, [user]);
 
   // Auto-scroll to bottom of chat
   useEffect(() => {
@@ -168,11 +190,15 @@ function SpiritualChatInner() {
     return () => window.removeEventListener(AUTH_CHANGE_EVENT, onAuthChange);
   }, []);
 
-  // Fetch charts first, then initialize chat session
+  // Fetch charts first, then initialize chat session (chỉ chạy 1 lần theo userId, không reset khi cập nhật số dư Tín Chỉ)
+  const initializedUidRef = useRef<number | null>(null);
+  const currentUserId = user ? Number(user.id || user.userId || 1) : null;
+
   useEffect(() => {
-    if (isAuthorized === true && user) {
-      const uid = Number(user.id || user.userId || 1);
-      
+    if (isAuthorized === true && currentUserId && initializedUidRef.current !== currentUserId) {
+      initializedUidRef.current = currentUserId;
+      const uid = currentUserId;
+
       const setup = async () => {
         try {
           const res = await fetch(`${TUVI_BASE}/charts/user/${uid}`);
@@ -208,7 +234,7 @@ function SpiritualChatInner() {
       
       setup();
     }
-  }, [isAuthorized, user]);
+  }, [isAuthorized, currentUserId]);
 
   const loadHistory = async (convId: number, activeChart: any) => {
     try {
@@ -439,6 +465,16 @@ function SpiritualChatInner() {
     }
   };
 
+  const handleCopyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(buildReferralShareUrl(user));
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      // ignore
+    }
+  };
+
   const handleSend = async (customText?: string) => {
     const textToSend = customText || inputValue.trim();
     if (!textToSend || isSending) return;
@@ -446,6 +482,21 @@ function SpiritualChatInner() {
     if (!customText) setInputValue("");
     setMessages((prev) => [...prev, { role: "user", text: textToSend }]);
     setIsSending(true);
+
+    // Kiểm tra Lộc Khai Tâm miễn phí trong ngày hoặc trừ 1 Tín Chỉ
+    const creditCheck = await consumeFeatureCredit(`Thỉnh vấn Mệnh Lý: "${textToSend}"`);
+    if (!creditCheck.allowed) {
+      setIsSending(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          isCreditInvite: true,
+          text: `Kính thưa Chủ Sự, hôm nay bạn đã sử dụng trọn **${DAILY_FREE_LIMIT}/${DAILY_FREE_LIMIT} lượt Lộc Khai Tâm miễn phí** và **Ví Linh Khí** hiện tạm hết Tín Chỉ.\n\n• Bạn có thể mở **Tụ Bảo Các** để thỉnh thêm Tín Chỉ (chỉ từ **30.000đ cho 50 lượt** thỉnh vấn chuyên sâu — tương đương 600đ/lượt).\n• Hoặc chia sẻ liên kết Huyền Cơ cho bạn bè để nhận **+5 Tín Chỉ thưởng miễn phí**, hay quay lại vào ngày mai để nhận tiếp **${DAILY_FREE_LIMIT} lượt Lộc Khai Tâm** mới.`,
+        },
+      ]);
+      return;
+    }
 
     // Build rich context from topic and birth information
     let richPrompt = textToSend;
@@ -853,6 +904,29 @@ function SpiritualChatInner() {
                       ownerMenh={chartOwnerMenh}
                     />
 
+                    {msg.isCreditInvite && (
+                      <div className="mt-4 pt-3.5 border-t border-[#D4AF37]/15 flex flex-wrap items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openGlobalPricingModal(
+                              "Thỉnh thêm Tín Chỉ để tiếp tục vấn đáp chuyên sâu cùng Khâm Thiên Giám AI"
+                            )
+                          }
+                          className="px-4 py-2 rounded-full hc-gold-btn text-xs font-bold uppercase tracking-wider cursor-pointer"
+                        >
+                          ✦ Mở Tụ Bảo Các (Từ 30.000đ)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCopyInviteLink}
+                          className="px-4 py-2 rounded-full bg-[#130F20] hover:bg-[#1C162E] border border-[#D4AF37]/35 text-xs font-semibold text-[#E8C96A] hover:text-[#FFF3C4] transition-all cursor-pointer"
+                        >
+                          {shareCopied ? "✓ Đã chép link nhận +5 Tín Chỉ" : "Chia sẻ nhận +5 Tín Chỉ miễn phí"}
+                        </button>
+                      </div>
+                    )}
+
                     {msg.suggestions && msg.suggestions.length > 0 && (
                       <div className="mt-4 pt-3.5 border-t border-[#D4AF37]/12">
                         <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9E9482] mb-2">
@@ -890,7 +964,44 @@ function SpiritualChatInner() {
           </div>
 
           {/* Input control */}
-          <div className="p-3 sm:p-4 border-t border-[#D4AF37]/12 bg-[#08060E]/80 shrink-0">
+          <div className="px-3 sm:px-4 pt-2.5 pb-3 sm:pb-4 border-t border-[#D4AF37]/12 bg-[#08060E]/85 shrink-0 space-y-2">
+            <div className="flex items-center justify-between gap-2 px-2 text-[11px]">
+              {freeRemaining > 0 ? (
+                <div className="flex items-center gap-1.5 text-[#C5B386]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>
+                    Lộc Khai Tâm hôm nay: còn{" "}
+                    <strong className="text-emerald-300 font-semibold">
+                      {freeRemaining}/{DAILY_FREE_LIMIT} lượt thỉnh vấn miễn phí
+                    </strong>
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-[#A89B82]">
+                  <CreditCoinIcon size={13} />
+                  <span>
+                    Ví Linh Khí:{" "}
+                    <strong className="text-[#F6D87A] font-semibold">
+                      {Number(user?.credits ?? 0)} Tín Chỉ
+                    </strong>{" "}
+                    <span className="hidden sm:inline text-[#8E8268]">
+                      (1 Tín Chỉ / câu thỉnh vấn sâu)
+                    </span>
+                  </span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => openGlobalPricingModal()}
+                className="text-[11px] font-semibold text-[#E8C96A] hover:text-[#FFF3C4] transition-colors cursor-pointer whitespace-nowrap"
+              >
+                {Number(user?.credits ?? 0) <= 3 && freeRemaining === 0
+                  ? "✦ Thỉnh thêm Tín Chỉ"
+                  : "Tụ Bảo Các ✦"}
+              </button>
+            </div>
+
             <div className="flex items-center gap-2 rounded-full bg-[#110E1B] border border-[#D4AF37]/25 focus-within:border-[#D4AF37]/60 focus-within:shadow-[0_0_22px_rgba(212,175,55,0.1)] pl-4 pr-1.5 py-1.5 transition-all">
               <span className="text-[#D4AF37]/60 text-xs select-none hidden sm:inline">✦</span>
               <input

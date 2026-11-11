@@ -71,7 +71,7 @@ export default function PWAInstallBanner() {
   return (
     <>
       {/* Mystical Bottom Banner */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-md bg-[#160c2b]/95 border border-[#d4af37]/40 shadow-[0_0_20px_rgba(212,175,55,0.2)] rounded-2xl p-4 flex items-center justify-between backdrop-blur-md animate-fade-in">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-md bg-[#120F1D]/95 border border-[#D4AF37]/35 shadow-[0_12px_32px_rgba(0,0,0,0.65)] rounded-2xl p-4 flex items-center justify-between backdrop-blur-md animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl overflow-hidden bg-[#0d0b21] flex items-center justify-center border border-[#d4af37]/20 shadow-[0_0_10px_rgba(212,175,55,0.1)]">
             <img src="/icons/icon-192.png" alt="Huyền Cơ Icon" className="w-full h-full object-cover" />
