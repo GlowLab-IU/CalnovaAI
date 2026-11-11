@@ -106,13 +106,26 @@ const SAMPLE_PREVIEWS = {
     ctaLabel: "Lập Lá Số Tử Vi Chính Chủ",
     ctaPath: "/huyen-co/laso",
   },
+  tarot: {
+    badge: "Bản Mẫu • Tarot 78 Lá Rider-Waite & Bắt Bài Tâm Lý",
+    title: "The Lovers (Xuôi) • Chín Kiếm (Xuôi) • The Star (Xuôi)",
+    metrics: [
+      { label: "Độ Bắt Thóp Tâm Lý", value: "97% — Rung động hai chiều nhưng tự suy diễn lúc 2h sáng" },
+      { label: "Chỉ Số Suy Diễn (Delulu)", value: "76% — Ngoài mặt tỏ vẻ bất cần, trong đầu chạy 80 kịch bản" },
+      { label: "Phán Quyết Của Astra", value: "Đèn Xanh Bật Sáng • Hạ bớt rào cản tự vệ để đón kết nối thật" },
+    ],
+    excerpt:
+      "Nhìn lá Chín Kiếm nằm kẹp giữa Đôi Tình Nhân (The Lovers) và Ngôi Sao Hy Vọng (The Star) là Astra bắt thóp được ngay: sợi dây cảm xúc giữa hai người hoàn toàn là thật, chỉ có bạn tự ôm điện thoại lúc nửa đêm phóng đại nỗi lo lên gấp mười lần thôi! Dẹp bớt kịch bản tự dọa mình đi, tín hiệu chữa lành của The Star sẽ mở lối ngay trong 2 tuần tới.",
+    ctaLabel: "Rút Bài Tarot Cùng Astra",
+    ctaPath: "/tarot",
+  },
 };
 
 export default function HuyenCoPortal() {
   const router = useRouter();
   const [refCode, setRefCode] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
-  const [sampleTab, setSampleTab] = useState<"face" | "cards" | "tuvi">("face");
+  const [sampleTab, setSampleTab] = useState<"face" | "cards" | "tuvi" | "tarot">("tarot");
 
   // Auth states
   const [token, setToken] = useState<string | null>(null);
@@ -233,6 +246,10 @@ export default function HuyenCoPortal() {
   };
 
   const handleLaunchFeature = (path: string) => {
+    if (path.startsWith("/tarot")) {
+      window.location.href = path;
+      return;
+    }
     if (!token) {
       setRedirectPath(path);
       setIsAuthModalOpen(true);
@@ -480,7 +497,7 @@ export default function HuyenCoPortal() {
           <div className="text-center mb-12">
             <div className="text-[11px] font-bold uppercase text-[#D4AF37] tracking-[0.28em] mb-3 flex items-center justify-center gap-3">
               <span className="w-10 h-px bg-[#D4AF37]/35" />
-              <span>Ngũ Đại Pháp Môn</span>
+              <span>Lục Đại Pháp Môn</span>
               <span className="w-10 h-px bg-[#D4AF37]/35" />
             </div>
             <h2 className="text-3xl sm:text-4xl font-serif font-bold text-white">
@@ -596,9 +613,45 @@ export default function HuyenCoPortal() {
             </div>
           </div>
 
-          {/* Hàng 2: 3 Pháp Môn Tinh Bàn, Quẻ Bài & Cố Vấn Mệnh Lý */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* 3. Lá Số Tử Vi 12 Cung */}
+          {/* Hàng 2: 4 Pháp Môn Tinh Bàn, Tarot 78 Lá, Quẻ Bài 32 Lá & Cố Vấn Mệnh Lý */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* 3. Astra Tarot 78 Lá (Mới • Hot Gen Z) */}
+            <div
+              onClick={() => handleLaunchFeature("/tarot")}
+              className="hc-card hc-card-hover rounded-3xl p-7 cursor-pointer flex flex-col justify-between relative overflow-hidden group border-[#D4AF37]/35"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="w-16 h-16 rounded-2xl bg-[#0A0812] border border-[#D4AF37]/40 flex items-center justify-center shadow-lg group-hover:border-[#D4AF37]/80 transition-all">
+                    <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+                      <rect x="11" y="6" width="26" height="36" rx="4" stroke="#E8C96A" strokeWidth="1.6" fill="rgba(212,175,55,0.08)" />
+                      <rect x="14.5" y="9.5" width="19" height="29" rx="2" stroke="#D4AF37" strokeOpacity="0.45" strokeWidth="1" />
+                      <path d="M24 15L26.2 21.8L33 24L26.2 26.2L24 33L21.8 26.2L15 24L21.8 21.8L24 15Z" stroke="#FFF3C4" strokeWidth="1.4" fill="rgba(245,208,97,0.2)" />
+                      <circle cx="24" cy="24" r="2.2" fill="#FFF3C4" />
+                    </svg>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-[#D4AF37]/20 border border-[#D4AF37]/45 text-[10px] font-bold uppercase tracking-wider text-[#FFF3C4]">
+                    ✦ Tarot 78 Lá
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-serif font-bold text-white group-hover:text-[#E8C96A] transition-colors mb-2">
+                  Astra Tarot 78 Lá
+                </h3>
+                <p className="text-xs sm:text-sm text-[#C5B386] leading-relaxed mb-5">
+                  Trải bài tương tác cùng <strong className="text-slate-200">Astra</strong>: vừa chuẩn cổ học Rider-Waite, vừa <strong className="text-slate-200">bắt thóp tâm lý hài hước</strong>, đo chỉ số Suy diễn & rút Lá Bổ Trợ trực tiếp.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-[#D4AF37]/15 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#E8C96A]">
+                  Mở Bàn Bài Tarot
+                </span>
+                <span className="text-[#E8C96A] group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+
+            {/* 4. Lá Số Tử Vi 12 Cung */}
             <div
               onClick={() => handleLaunchFeature("/huyen-co/laso")}
               className="hc-card hc-card-hover rounded-3xl p-7 cursor-pointer flex flex-col justify-between relative overflow-hidden group"
@@ -735,9 +788,10 @@ export default function HuyenCoPortal() {
 
               <div className="flex flex-wrap gap-2 bg-[#090710] p-1.5 rounded-2xl border border-[#D4AF37]/20">
                 {[
-                  { id: "face", label: "Diện Tướng Học" },
-                  { id: "cards", label: "Quẻ Bài Tam Đa" },
+                  { id: "tarot", label: "Tarot 78 Lá" },
                   { id: "tuvi", label: "Tinh Bàn Tử Vi" },
+                  { id: "cards", label: "Quẻ Bài 32 Lá" },
+                  { id: "face", label: "Diện Tướng Học" },
                 ].map((t) => (
                   <button
                     key={t.id}

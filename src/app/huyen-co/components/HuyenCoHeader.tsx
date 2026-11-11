@@ -31,12 +31,13 @@ interface HuyenCoHeaderProps {
   rightSlot?: React.ReactNode;
 }
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { href: string; label: string; exact?: boolean; externalApp?: boolean }[] = [
   { href: "/huyen-co", label: "Tổng Quan", exact: true },
-  { href: "/huyen-co/face-scan", label: "Diện Tướng" },
-  { href: "/huyen-co/palm-scan", label: "Thủ Tướng" },
+  { href: "/tarot", label: "Tarot 78 Lá", externalApp: true },
   { href: "/huyen-co/laso", label: "Tử Vi 12 Cung" },
   { href: "/huyen-co/boibai", label: "Bói Bài 32 Lá" },
+  { href: "/huyen-co/face-scan", label: "Diện Tướng" },
+  { href: "/huyen-co/palm-scan", label: "Thủ Tướng" },
   { href: "/huyen-co/chat", label: "Cố Vấn AI" },
 ];
 
@@ -189,16 +190,20 @@ export default function HuyenCoHeader({
           <nav className="hidden lg:flex items-center gap-1 bg-[#120F1D]/80 border border-[#D4AF37]/15 rounded-full px-2 py-1">
             {NAV_ITEMS.map((item) => {
               const active = isActive(item.href, item.exact);
+              const itemCls = `px-3 py-1.5 rounded-full text-xs font-medium tracking-wider transition-all ${
+                active
+                  ? "bg-[#D4AF37]/20 text-[#FFF3C4] border border-[#D4AF37]/45 font-semibold shadow-[0_0_15px_rgba(212,175,55,0.15)]"
+                  : "text-[#C5B386] hover:text-[#FFF3C4] hover:bg-white/5"
+              }`;
+              if (item.externalApp) {
+                return (
+                  <a key={item.href} href={item.href} className={itemCls}>
+                    {item.label}
+                  </a>
+                );
+              }
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium tracking-wider transition-all ${
-                    active
-                      ? "bg-[#D4AF37]/20 text-[#FFF3C4] border border-[#D4AF37]/45 font-semibold shadow-[0_0_15px_rgba(212,175,55,0.15)]"
-                      : "text-[#C5B386] hover:text-[#FFF3C4] hover:bg-white/5"
-                  }`}
-                >
+                <Link key={item.href} href={item.href} className={itemCls}>
                   {item.label}
                 </Link>
               );
@@ -308,16 +313,20 @@ export default function HuyenCoHeader({
         <div className="lg:hidden flex items-center gap-1.5 px-3 py-2 overflow-x-auto border-t border-[#D4AF37]/10 bg-[#0A0812]/90 no-scrollbar">
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.href, item.exact);
+            const mobileCls = `px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${
+              active
+                ? "bg-[#D4AF37]/20 text-[#FFF3C4] border border-[#D4AF37]/45 font-semibold"
+                : "text-[#C5B386] border border-transparent hover:text-[#FFF3C4]"
+            }`;
+            if (item.externalApp) {
+              return (
+                <a key={item.href} href={item.href} className={mobileCls}>
+                  {item.label}
+                </a>
+              );
+            }
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-all ${
-                  active
-                    ? "bg-[#D4AF37]/20 text-[#FFF3C4] border border-[#D4AF37]/45 font-semibold"
-                    : "text-[#C5B386] border border-transparent hover:text-[#FFF3C4]"
-                }`}
-              >
+              <Link key={item.href} href={item.href} className={mobileCls}>
                 {item.label}
               </Link>
             );
