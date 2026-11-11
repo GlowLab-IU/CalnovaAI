@@ -75,15 +75,15 @@ const getInitialWelcomeMessage = (chart: any) => {
   }
   const extra = chart.chartData?.extra || chart.extra || {};
   const ownerName = chart.ownerName || extra.name || chart.payload?.name || "bạn";
-  return `Xin chào **${ownerName}**! 🔮
+  return `Kính chào **${ownerName}**,
 
-Tôi đã thiết lập kết nối tinh bàn của bạn:
+Tinh bàn 12 cung của bạn đã được an định tại Tịnh Thất Huyền Cơ:
 • **Bản mệnh**: ${extra.menh || "--"} (${extra.am_duong_menh || ""})
-• **Cục**: ${extra.cuc || "--"} (${extra.menh_vs_cuc || ""})
+• **Cục số**: ${extra.cuc || "--"} (${extra.menh_vs_cuc || ""})
 • **Mệnh chủ**: ${extra.menh_chu || "--"} • **Thân chủ**: ${extra.than_chu || "--"}
-• **Giờ & Ngày sinh**: Giờ ${extra.hour || ""}, ngày ${extra.solar_date || ""} (Âm lịch: ${extra.lunar_date || ""})
+• **Thời khắc sinh**: Giờ ${extra.hour || ""}, ngày ${extra.solar_date || ""} (Âm lịch: ${extra.lunar_date || ""})
 
-Chào mừng bạn đến với không gian chiêm nghiệm Huyền Cơ AI. Tôi đã thấu suốt toàn bộ 12 cung vị trên bản đồ năng lượng của bạn. Bạn muốn bắt đầu tham vấn sâu sắc về khía cạnh nào trước?`;
+Cố Vấn Mệnh Lý đã thấu suốt toàn bộ cấu trúc tinh diệu và vận hạn trên lá số của bạn. Hôm nay bạn muốn luận giải chuyên sâu về phương diện nào trước?`;
 };
 
 function SpiritualChatInner() {
@@ -595,12 +595,17 @@ function SpiritualChatInner() {
         <div
           className={`${
             showMobileConfig ? "flex max-h-[55dvh] overflow-y-auto" : "hidden"
-          } md:flex md:max-h-full md:overflow-y-auto w-full md:w-80 shrink-0 hc-card rounded-2xl p-4 flex-col gap-4 self-start`}
+          } md:flex md:max-h-full md:overflow-y-auto w-full md:w-80 shrink-0 hc-card rounded-2xl p-4 flex-col gap-4 self-start relative overflow-hidden`}
         >
+          <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/45 to-transparent" />
+
           <div>
-            <h3 className="text-[11px] font-bold uppercase text-[#E8C96A] tracking-[0.18em] mb-2.5">
-              Chủ Đề Tham Vấn
-            </h3>
+            <div className="flex items-center justify-between mb-2.5">
+              <h3 className="text-[11px] font-bold uppercase text-[#E8C96A] tracking-[0.18em]">
+                Chủ Đề Tham Vấn
+              </h3>
+              <span className="text-[11px] font-serif text-[#D4AF37]/30 select-none">問道</span>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {[
                 { id: "general", label: "Tổng Quan" },
@@ -611,10 +616,10 @@ function SpiritualChatInner() {
                 <button
                   key={t.id}
                   onClick={() => setTopic(t.id)}
-                  className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all ${
+                  className={`py-2 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
                     topic === t.id
-                      ? "bg-[#D4AF37]/20 border-[#D4AF37]/60 text-[#E8C96A] shadow-[0_0_12px_rgba(212,175,55,0.12)]"
-                      : "bg-[#07060B]/80 border-[#D4AF37]/15 text-[#9E9482] hover:border-[#D4AF37]/35 hover:text-[#F5EFE6]"
+                      ? "bg-[#D4AF37]/18 border-[#D4AF37]/55 text-[#FFF3C4] shadow-[0_0_14px_rgba(212,175,55,0.12)]"
+                      : "bg-[#08070E]/85 border-[#D4AF37]/15 text-[#9E9482] hover:border-[#D4AF37]/35 hover:text-[#F5EFE6]"
                   }`}
                 >
                   {t.label}
@@ -623,10 +628,13 @@ function SpiritualChatInner() {
             </div>
           </div>
 
-          <div className="border-t border-[#D4AF37]/15 pt-3.5">
-            <h3 className="text-[11px] font-bold uppercase text-[#E8C96A] tracking-[0.18em] mb-2">
-              Lá Số Kết Nối
-            </h3>
+          <div className="border-t border-[#D4AF37]/12 pt-3.5">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[11px] font-bold uppercase text-[#E8C96A] tracking-[0.18em]">
+                Lá Số Kết Nối
+              </h3>
+              <span className="text-[11px] font-serif text-[#D4AF37]/30 select-none">命盤</span>
+            </div>
             <select
               value={selectedChart?.id || ""}
               onChange={(e) => {
@@ -640,7 +648,7 @@ function SpiritualChatInner() {
                   setBirthContext({ name: "", birthDate: "", gender: "male" });
                 }
               }}
-              className="w-full px-3 py-2.5 bg-[#07060B] border border-[#D4AF37]/25 rounded-xl text-base sm:text-xs outline-none focus:border-[#D4AF37] transition-all text-[#E8C96A] font-bold"
+              className="w-full px-3 py-2.5 bg-[#08070E] border border-[#D4AF37]/25 rounded-xl text-base sm:text-xs outline-none focus:border-[#D4AF37]/60 transition-all text-[#E8C96A] font-semibold"
             >
               <option value="" className="text-[#9E9482] font-normal">-- Nhập tay bối cảnh tự do --</option>
               {savedCharts.map((chart) => {
@@ -657,7 +665,7 @@ function SpiritualChatInner() {
           </div>
 
           {!selectedChart ? (
-            <div className="border-t border-[#D4AF37]/15 pt-3.5">
+            <div className="border-t border-[#D4AF37]/12 pt-3.5">
               <h3 className="text-[11px] font-bold uppercase text-[#C5B386] tracking-[0.18em] mb-2.5">
                 Bối Cảnh Nhập Tay
               </h3>
@@ -670,7 +678,7 @@ function SpiritualChatInner() {
                       placeholder="Họ Tên"
                       value={birthContext.name}
                       onChange={(e) => setBirthContext({ ...birthContext, name: e.target.value })}
-                      className="w-full px-3 py-2 bg-[#07060B] border border-[#D4AF37]/20 rounded-xl text-base sm:text-xs outline-none focus:border-[#D4AF37] transition-all text-[#F5EFE6]"
+                      className="w-full px-3 py-2 bg-[#08070E] border border-[#D4AF37]/20 rounded-xl text-base sm:text-xs outline-none focus:border-[#D4AF37] transition-all text-[#F5EFE6]"
                     />
                   </div>
                   <div>
@@ -678,7 +686,7 @@ function SpiritualChatInner() {
                     <select
                       value={birthContext.gender}
                       onChange={(e) => setBirthContext({ ...birthContext, gender: e.target.value })}
-                      className="w-full px-2 py-2 bg-[#07060B] border border-[#D4AF37]/20 rounded-xl text-base sm:text-xs outline-none focus:border-[#D4AF37] transition-all text-[#F5EFE6]"
+                      className="w-full px-2 py-2 bg-[#08070E] border border-[#D4AF37]/20 rounded-xl text-base sm:text-xs outline-none focus:border-[#D4AF37] transition-all text-[#F5EFE6]"
                     >
                       <option value="male">Nam</option>
                       <option value="female">Nữ</option>
@@ -696,16 +704,34 @@ function SpiritualChatInner() {
               </div>
             </div>
           ) : (
-            <div className="border-t border-[#D4AF37]/15 pt-3 text-center">
-              <p className="text-[11px] text-[#9E9482] italic">Hệ thống đang kết nối trực tiếp với tinh bàn 12 cung của lá số đã chọn.</p>
+            <div className="border-t border-[#D4AF37]/12 pt-3 text-center">
+              <p className="text-[11px] text-[#9E9482] leading-5">
+                Đang đồng bộ trực tiếp cùng 12 cung vị của lá số đã chọn.
+              </p>
             </div>
           )}
         </div>
 
-        {/* Right column: Chat Area */}
-        <div className="flex-1 hc-card rounded-2xl flex flex-col min-h-0 overflow-hidden">
-          {/* Mobile Quick Topic & Chart Bar */}
-          <div className="md:hidden flex items-center justify-between gap-2 px-3 py-2 bg-[#07060B]/80 border-b border-[#D4AF37]/15 overflow-x-auto no-scrollbar shrink-0">
+        {/* Right column: Chat Chamber */}
+        <div className="relative flex-1 hc-card rounded-2xl flex flex-col min-h-0 overflow-hidden">
+          {/* Ánh kim mảnh trên đỉnh khung chat */}
+          <div className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-[#E8C96A]/50 to-transparent" />
+
+          {/* Desktop Subtle Chamber Header */}
+          <div className="hidden md:flex items-center justify-between px-5 py-2.5 bg-[#08060E]/65 border-b border-[#D4AF37]/12 shrink-0">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.75)]" />
+              <span className="text-[11px] font-serif font-semibold uppercase tracking-[0.16em] text-[#E8C96A]">
+                Tịnh Thất Tham Vấn • Khâm Thiên Giám AI
+              </span>
+            </div>
+            <span className="text-[11px] font-serif tracking-[0.22em] text-[#D4AF37]/35 select-none">
+              玄機問道
+            </span>
+          </div>
+
+          {/* Mobile Quick Topic Bar */}
+          <div className="md:hidden flex items-center justify-between gap-2 px-3 py-2 bg-[#08060E]/80 border-b border-[#D4AF37]/15 overflow-x-auto no-scrollbar shrink-0">
             <div className="flex items-center gap-1.5 shrink-0">
               {[
                 { id: "general", label: "Tổng Quan" },
@@ -718,7 +744,7 @@ function SpiritualChatInner() {
                   onClick={() => setTopic(t.id)}
                   className={`py-1 px-3 text-[11px] font-semibold rounded-full border transition-all whitespace-nowrap ${
                     topic === t.id
-                      ? "bg-[#D4AF37]/20 border-[#D4AF37]/60 text-[#E8C96A]"
+                      ? "bg-[#D4AF37]/20 border-[#D4AF37]/60 text-[#FFF3C4]"
                       : "bg-[#07060B] border-[#D4AF37]/15 text-[#9E9482]"
                   }`}
                 >
@@ -729,40 +755,50 @@ function SpiritualChatInner() {
           </div>
 
           {/* Messages list */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-3 sm:space-y-4 flex flex-col">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-5 space-y-4 sm:space-y-5 flex flex-col">
             {selectedChart && (
-              <div className="bg-[#07060B]/80 border border-[#D4AF37]/25 p-4 rounded-2xl mb-2 shadow-md flex flex-wrap gap-4 items-center justify-between">
+              <div className="relative overflow-hidden bg-gradient-to-r from-[#0C0916]/95 via-[#110D1E]/95 to-[#0C0916]/95 border border-[#D4AF37]/25 px-4 py-3.5 rounded-2xl mb-1 shadow-md flex flex-wrap gap-4 items-center justify-between">
+                <div className="pointer-events-none select-none absolute right-4 -bottom-1 font-serif text-4xl font-bold text-[#D4AF37]/[0.05]">
+                  命盤
+                </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-xl flex items-center justify-center text-[#E8C96A]">
+                  <div className="w-9 h-9 bg-[#D4AF37]/10 border border-[#D4AF37]/35 rounded-xl flex items-center justify-center text-[#E8C96A] shadow-[0_0_14px_rgba(212,175,55,0.1)]">
                     <TuViAstrolabeIcon className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[9px] text-[#C5B386] font-bold uppercase tracking-wider">Tinh bàn đang kết nối</p>
-                    <p className="text-xs font-bold text-[#F5EFE6]">
-                      {selectedChart.ownerName || selectedChart.chartData?.extra?.name || selectedChart.payload?.name || selectedChart.extra?.name}
+                    <p className="text-[9px] text-[#C5B386] font-bold uppercase tracking-[0.16em]">
+                      Tinh bàn đang kết nối
+                    </p>
+                    <p className="text-xs sm:text-[13px] font-serif font-bold text-[#FFF3C4] tracking-wide">
+                      {selectedChart.ownerName ||
+                        selectedChart.chartData?.extra?.name ||
+                        selectedChart.payload?.name ||
+                        selectedChart.extra?.name}
                     </p>
                   </div>
                 </div>
-                
-                <div className="flex gap-4 text-[10px]">
+
+                <div className="flex gap-4 text-[10px] relative z-10">
                   <div className="border-l border-[#D4AF37]/15 pl-3">
-                    <span className="text-[8px] text-[#9E9482] block uppercase">Giới tính</span>
+                    <span className="text-[8.5px] text-[#9E9482] block uppercase tracking-wider">Giới tính</span>
                     <span className="font-semibold text-[#F5EFE6]">
                       {selectedChart.gender === "female" || selectedChart.payload?.gender === -1 ? "Nữ" : "Nam"}
                     </span>
                   </div>
                   <div className="border-l border-[#D4AF37]/15 pl-3">
-                    <span className="text-[8px] text-[#9E9482] block uppercase">Bản mệnh</span>
+                    <span className="text-[8.5px] text-[#9E9482] block uppercase tracking-wider">Bản mệnh</span>
                     <span className="font-semibold text-[#E8C96A]">
                       {selectedChart.chartData?.extra?.menh || selectedChart.extra?.menh || "--"}
                     </span>
                   </div>
                   <div className="border-l border-[#D4AF37]/15 pl-3">
-                    <span className="text-[8px] text-[#9E9482] block uppercase">Ngày sinh</span>
+                    <span className="text-[8.5px] text-[#9E9482] block uppercase tracking-wider">Ngày sinh</span>
                     <span className="font-semibold text-[#F5EFE6]">
                       {selectedChart.chartData?.extra?.solar_date ||
                         selectedChart.extra?.solar_date ||
-                        (selectedChart.birthDate ? new Date(selectedChart.birthDate).toLocaleDateString("vi-VN") : "--")}
+                        (selectedChart.birthDate
+                          ? new Date(selectedChart.birthDate).toLocaleDateString("vi-VN")
+                          : "--")}
                     </span>
                   </div>
                 </div>
@@ -782,51 +818,66 @@ function SpiritualChatInner() {
                 selectedChart?.extra?.menh ||
                 undefined;
 
+              if (msg.role === "user") {
+                return (
+                  <div key={i} className="self-end max-w-[86%] sm:max-w-[74%] flex flex-col items-end">
+                    <span className="text-[10px] uppercase tracking-[0.14em] text-[#A89B7D] mb-1 pr-1 font-medium">
+                      Chủ Sự thỉnh vấn ✦
+                    </span>
+                    <div className="rounded-2xl rounded-tr-sm px-4 py-3 text-[13.5px] sm:text-sm leading-relaxed bg-gradient-to-br from-[#231B10]/90 via-[#191420]/95 to-[#130F1B]/95 text-[#F6EFE2] border border-[#D4AF37]/35 shadow-[0_6px_22px_rgba(0,0,0,0.38)]">
+                      <div className="whitespace-pre-line leading-relaxed">
+                        {renderMarkdown(msg.text)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
-                <div
-                  key={i}
-                  className={`rounded-2xl p-3.5 sm:p-4 text-sm leading-relaxed border ${
-                    msg.role === "user"
-                      ? "max-w-[85%] sm:max-w-[75%] bg-[#D4AF37]/15 text-[#F5EFE6] self-end border-[#D4AF37]/40 rounded-br-none"
-                      : "w-full max-w-[96%] sm:max-w-[90%] bg-[#090810]/95 text-[#E5DEC9] self-start border-[#D4AF37]/20 rounded-bl-none shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
-                  }`}
-                >
-                  {msg.role === "assistant" ? (
+                <div key={i} className="self-start w-full max-w-[98%] sm:max-w-[92%] flex flex-col items-start">
+                  <div className="flex items-center gap-2 mb-1.5 pl-1">
+                    <div className="w-5 h-5 rounded-md bg-[#161224] border border-[#D4AF37]/35 flex items-center justify-center text-[#E8C96A]">
+                      <AICoachOracleIcon className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-[10.5px] font-serif font-bold uppercase tracking-[0.15em] text-[#D9C282]">
+                      Cố Vấn Mệnh Lý • Huyền Cơ Các
+                    </span>
+                  </div>
+
+                  <div className="relative w-full rounded-2xl rounded-tl-sm p-3.5 sm:p-5 text-sm leading-relaxed bg-gradient-to-b from-[#0E0B18]/95 to-[#090710]/95 text-[#E5DEC9] border border-[#D4AF37]/22 shadow-[0_10px_34px_rgba(0,0,0,0.48)]">
+                    <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#D4AF37]/35 to-transparent" />
+
                     <OracleReadingMessage
                       text={msg.text}
                       ownerName={chartOwnerName}
                       ownerMenh={chartOwnerMenh}
                     />
-                  ) : (
-                    <div className="whitespace-pre-line leading-relaxed">
-                      {renderMarkdown(msg.text)}
-                    </div>
-                  )}
 
-                  {msg.suggestions && msg.suggestions.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-[#D4AF37]/15">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9E9482] mb-2">
-                        ✦ Gợi ý tham vấn tiếp theo
+                    {msg.suggestions && msg.suggestions.length > 0 && (
+                      <div className="mt-4 pt-3.5 border-t border-[#D4AF37]/12">
+                        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9E9482] mb-2">
+                          ✧ Gợi ý tham vấn tiếp theo
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {msg.suggestions.map((sug, sugIndex) => (
+                            <button
+                              key={sugIndex}
+                              onClick={() => handleSend(sug)}
+                              disabled={isSending}
+                              className="px-3 py-1.5 bg-[#120F1E] border border-[#D4AF37]/25 text-[#E8C96A] rounded-full text-xs hover:bg-[#D4AF37]/18 hover:border-[#D4AF37]/60 hover:text-[#FFF4CC] transition-all font-medium disabled:opacity-50 text-left cursor-pointer"
+                            >
+                              {sug}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {msg.suggestions.map((sug, sugIndex) => (
-                          <button
-                            key={sugIndex}
-                            onClick={() => handleSend(sug)}
-                            disabled={isSending}
-                            className="px-3 py-1.5 bg-[#131020] border border-[#D4AF37]/30 text-[#E8C96A] rounded-full text-xs hover:bg-[#D4AF37] hover:text-[#07060B] transition-all font-semibold disabled:opacity-50 text-left cursor-pointer"
-                          >
-                            {sug}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
             {isSending && (
-              <div className="w-full max-w-[92%] sm:max-w-[72%] bg-[#090810]/95 border border-[#D4AF37]/25 self-start rounded-2xl rounded-bl-none p-4 space-y-2.5 shadow-lg">
+              <div className="w-full max-w-[92%] sm:max-w-[72%] bg-[#0B0914]/95 border border-[#D4AF37]/25 self-start rounded-2xl rounded-tl-sm p-4 space-y-2.5 shadow-lg">
                 <div className="flex items-center gap-2.5 text-xs font-semibold text-[#F5D061] animate-pulse">
                   <AICoachOracleIcon className="w-4 h-4" />
                   <span>✦ Cố Vấn Mệnh Lý đang đối chiếu tinh bàn & cổ thư...</span>
@@ -839,23 +890,26 @@ function SpiritualChatInner() {
           </div>
 
           {/* Input control */}
-          <div className="p-3 sm:p-4 border-t border-[#D4AF37]/15 bg-[#07060B]/70 flex gap-2 items-center shrink-0">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Nhập câu hỏi tham vấn..."
-              disabled={isSending}
-              className="flex-1 px-4 py-2.5 bg-[#120F1D] border border-[#D4AF37]/25 rounded-full text-base sm:text-sm outline-none text-[#F5EFE6] placeholder:text-[#9E9482] focus:border-[#D4AF37] transition-all disabled:opacity-50"
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={isSending}
-              className="px-6 py-2.5 hc-gold-btn font-bold rounded-full text-xs uppercase tracking-wider disabled:opacity-50 shrink-0"
-            >
-              Gửi
-            </button>
+          <div className="p-3 sm:p-4 border-t border-[#D4AF37]/12 bg-[#08060E]/80 shrink-0">
+            <div className="flex items-center gap-2 rounded-full bg-[#110E1B] border border-[#D4AF37]/25 focus-within:border-[#D4AF37]/60 focus-within:shadow-[0_0_22px_rgba(212,175,55,0.1)] pl-4 pr-1.5 py-1.5 transition-all">
+              <span className="text-[#D4AF37]/60 text-xs select-none hidden sm:inline">✦</span>
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder="Nhập câu hỏi tham vấn vận mệnh, sự nghiệp, tình duyên..."
+                disabled={isSending}
+                className="flex-1 bg-transparent py-1.5 text-base sm:text-sm outline-none text-[#F5EFE6] placeholder:text-[#8E8472] disabled:opacity-50"
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={isSending}
+                className="px-5 sm:px-6 py-2 hc-gold-btn font-bold rounded-full text-xs uppercase tracking-wider disabled:opacity-50 shrink-0 cursor-pointer"
+              >
+                Thỉnh Vấn
+              </button>
+            </div>
           </div>
         </div>
       </div>
